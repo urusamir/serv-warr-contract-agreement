@@ -48,8 +48,6 @@ const page = (
 ): Step => ({ kind: "page", id, section, title, subtitle, fields });
 
 export const steps: Step[] = [
-  { kind: "intro", id: "intro", title: "Let's capture this service report", subtitle: "Multiple fields per page — fly through it." },
-
   // ===== Vehicle & Customer (3 pages) =====
   page("p-vehicle-1", SECTIONS.vehicle, "Vehicle details", [
     { kind: "text", id: "vehicle.make_model", label: "Vehicle make & model", defaultValue: "Honda Accord", section: SECTIONS.vehicle, page: "p-vehicle-1" },
