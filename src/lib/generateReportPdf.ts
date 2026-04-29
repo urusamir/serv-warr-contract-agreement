@@ -1,6 +1,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { steps, SECTIONS } from "./reportSchema";
+import { allFieldSteps as steps, SECTIONS } from "./reportSchema";
 
 type Answers = Record<string, any>;
 
