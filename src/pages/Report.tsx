@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowDown, ArrowUp, Check, ChevronRight, Loader2, Send } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, Check, ChevronRight, Loader2, Send } from "lucide-react";
 import logoBlack from "@/assets/kavak-logo-black.png";
 import { steps, type Step } from "@/lib/reportSchema";
 import { buildPayload } from "@/lib/buildPayload";
+import { downloadReportPdf } from "@/lib/generateReportPdf";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -51,12 +52,22 @@ const Report = () => {
     setSubmitting(true);
     const payload = buildPayload(answers);
     try {
+      // 1. POST to webhook
       await fetch(WEBHOOK_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         mode: "no-cors",
         body: JSON.stringify(payload),
       });
+
+      // 2. Generate & download the PDF in the original format
+      try {
+        downloadReportPdf(answers);
+      } catch (pdfErr) {
+        console.error("PDF generation failed", pdfErr);
+        toast.error("Report submitted, but PDF generation failed.");
+      }
+
       toast.success("Report submitted");
       navigate("/report/done");
     } catch (e) {
@@ -144,11 +155,20 @@ const Report = () => {
             transition={{ duration: 0.4, ease: "easeOut" }}
           />
         </div>
-        <div className="flex items-center justify-between px-6 md:px-10 py-3">
+        <div className="flex items-center justify-between px-6 md:px-10 py-3 gap-3">
+          <button
+            onClick={goPrev}
+            disabled={index === 0}
+            className="inline-flex items-center gap-2 h-9 px-3 rounded-md border border-border bg-background hover:bg-muted disabled:opacity-30 transition text-sm font-medium"
+            aria-label="Back"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </button>
           <div className="text-xs text-muted-foreground hidden md:block">
             Press <kbd className="px-1.5 py-0.5 bg-muted rounded text-foreground">Enter</kbd> to continue
           </div>
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="flex items-center gap-2">
             <button
               onClick={goPrev}
               disabled={index === 0}
