@@ -549,10 +549,11 @@ function ReviewView({
   const grouped = useMemo(() => {
     const map = new Map<string, { id: string; label: string; value: any }[]>();
     for (const s of steps) {
-      if (!("section" in s) || s.kind === "section" || s.kind === "intro" || s.kind === "review") continue;
-      const arr = map.get(s.section) ?? [];
+      if (!("section" in s)) continue;
+      const sec = (s as any).section as string;
+      const arr = map.get(sec) ?? [];
       arr.push({ id: s.id, label: (s as any).label, value: answers[s.id] });
-      map.set(s.section, arr);
+      map.set(sec, arr);
     }
     return Array.from(map.entries());
   }, [answers]);
