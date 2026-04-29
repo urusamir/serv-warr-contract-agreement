@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowDown, ArrowLeft, ArrowUp, Check, ChevronRight, Loader2, Send } from "lucide-react";
 import logoBlack from "@/assets/kavak-logo-black.png";
-import { steps, type Step } from "@/lib/reportSchema";
+import { steps, allFieldSteps, type Step, type FieldStep } from "@/lib/reportSchema";
 import { buildPayload } from "@/lib/buildPayload";
 import { downloadReportPdf } from "@/lib/generateReportPdf";
 import { toast } from "sonner";
@@ -25,8 +25,8 @@ const Report = () => {
   const [direction, setDirection] = useState(1);
   const [answers, setAnswers] = useState<Answers>(() => {
     const init: Answers = {};
-    for (const s of steps) {
-      if (s.kind === "text" && s.defaultValue) init[s.id] = s.defaultValue;
+    for (const f of allFieldSteps) {
+      if (f.kind === "text" && f.defaultValue) init[f.id] = f.defaultValue;
     }
     return init;
   });
@@ -52,7 +52,6 @@ const Report = () => {
     setSubmitting(true);
     const payload = buildPayload(answers);
     try {
-      // 1. POST to webhook
       await fetch(WEBHOOK_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -60,7 +59,6 @@ const Report = () => {
         body: JSON.stringify(payload),
       });
 
-      // 2. Generate & download the PDF in the original format
       try {
         downloadReportPdf(answers);
       } catch (pdfErr) {
@@ -78,18 +76,17 @@ const Report = () => {
     }
   }, [answers, navigate]);
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts (only Enter on intro/review jumps; arrows for navigation)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
-      const isTextarea = target?.tagName === "TEXTAREA";
-      if (e.key === "ArrowDown" && !isTextarea) {
-        e.preventDefault();
-        goNext();
-      } else if (e.key === "ArrowUp" && !isTextarea) {
-        e.preventDefault();
-        goPrev();
-      } else if (e.key === "Enter" && !e.shiftKey && !isTextarea) {
+      const isEditable =
+        target?.tagName === "TEXTAREA" ||
+        target?.tagName === "INPUT" ||
+        target?.tagName === "SELECT" ||
+        target?.isContentEditable;
+
+      if (e.key === "Enter" && !e.shiftKey && !isEditable) {
         e.preventDefault();
         if (step.kind === "review") submit();
         else goNext();
@@ -97,11 +94,20 @@ const Report = () => {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [goNext, goPrev, step, submit]);
+  }, [goNext, step, submit]);
+
+  const jumpToField = useCallback((fieldId: string) => {
+    const f = allFieldSteps.find((x) => x.id === fieldId);
+    if (!f) return;
+    const i = steps.findIndex((s) => s.kind === "page" && s.id === f.page);
+    if (i >= 0) {
+      setDirection(i > index ? 1 : -1);
+      setIndex(i);
+    }
+  }, [index]);
 
   return (
     <main className="min-h-screen w-full bg-background text-foreground flex flex-col">
-      {/* Header */}
       <header className="flex items-center justify-between px-6 md:px-10 pt-6 md:pt-8">
         <Link to="/">
           <img src={logoBlack} alt="Kavak" className="h-6 md:h-7 w-auto" />
@@ -111,8 +117,7 @@ const Report = () => {
         </div>
       </header>
 
-      {/* Content */}
-      <section className="flex-1 flex items-center justify-center px-6 md:px-10 py-10">
+      <section className="flex-1 flex items-start md:items-center justify-center px-6 md:px-10 py-10">
         <div className="w-full max-w-3xl">
           <AnimatePresence mode="wait" custom={direction}>
             <motion.div
@@ -122,31 +127,23 @@ const Report = () => {
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             >
               <StepView
                 step={step}
-                answer={answers[step.id]}
                 answers={answers}
-                onChange={(v) => setAnswer(step.id, v)}
+                setAnswer={setAnswer}
                 onNext={goNext}
                 onSubmit={submit}
                 submitting={submitting}
-                onJumpTo={(id) => {
-                  const i = steps.findIndex((s) => s.id === id);
-                  if (i >= 0) {
-                    setDirection(i > index ? 1 : -1);
-                    setIndex(i);
-                  }
-                }}
+                onJumpTo={jumpToField}
               />
             </motion.div>
           </AnimatePresence>
         </div>
       </section>
 
-      {/* Bottom controls + progress */}
-      <footer className="border-t border-border bg-background">
+      <footer className="border-t border-border bg-background sticky bottom-0">
         <div className="h-1 bg-muted">
           <motion.div
             className="h-full bg-primary"
@@ -198,18 +195,16 @@ export default Report;
 
 function StepView({
   step,
-  answer,
   answers,
-  onChange,
+  setAnswer,
   onNext,
   onSubmit,
   submitting,
   onJumpTo,
 }: {
   step: Step;
-  answer: any;
   answers: Answers;
-  onChange: (v: any) => void;
+  setAnswer: (id: string, v: any) => void;
   onNext: () => void;
   onSubmit: () => void;
   submitting: boolean;
@@ -232,138 +227,145 @@ function StepView({
     );
   }
 
-  if (step.kind === "section") {
-    return (
-      <div className="py-10">
-        <div className="text-sm font-semibold uppercase tracking-widest text-primary">
-          Section
-        </div>
-        <h2 className="mt-3 text-4xl md:text-6xl font-black tracking-tight">{step.title}</h2>
-        {step.subtitle && (
-          <p className="mt-4 text-lg text-muted-foreground">{step.subtitle}</p>
-        )}
-        <OkButton onClick={onNext} label="Continue" />
-      </div>
-    );
-  }
-
   if (step.kind === "review") {
     return <ReviewView answers={answers} onJumpTo={onJumpTo} onSubmit={onSubmit} submitting={submitting} />;
   }
 
-  // "Field" steps share a layout
+  // Page with multiple fields
   return (
-    <FieldShell label={"label" in step ? step.label : ""} section={step.section}>
-      {step.kind === "text" && (
-        <TextField value={answer ?? ""} onChange={onChange} onEnter={onNext} placeholder={step.placeholder} />
-      )}
-      {step.kind === "longtext" && (
-        <LongTextField value={answer ?? ""} onChange={onChange} placeholder={step.placeholder} />
-      )}
-      {step.kind === "number" && (
-        <NumberField value={answer ?? ""} onChange={onChange} onEnter={onNext} unit={step.unit} />
-      )}
-      {step.kind === "date" && (
-        <DateTimeField type="date" value={answer ?? ""} onChange={onChange} onEnter={onNext} />
-      )}
-      {step.kind === "time" && (
-        <DateTimeField type="time" value={answer ?? ""} onChange={onChange} onEnter={onNext} />
-      )}
-      {step.kind === "select" && (
-        <SelectField value={answer ?? ""} onChange={(v) => { onChange(v); setTimeout(onNext, 200); }} options={step.options} />
-      )}
-      {step.kind === "yesno" && (
-        <YesNoField value={answer} onChange={(v) => { onChange(v); setTimeout(onNext, 200); }} />
-      )}
-      {step.kind === "checklist" && (
-        <ChecklistField value={answer} onChange={onChange} actions={step.actions} withNotes={!!step.withNotes} />
-      )}
-      {step.kind === "multinumber" && (
-        <MultiNumberField value={answer} onChange={onChange} fields={step.fields} unit={step.unit} />
-      )}
-      {step.kind === "multiselect" && (
-        <MultiSelectField value={answer} onChange={onChange} options={step.options} />
-      )}
+    <div className="py-4">
+      <div className="text-xs font-semibold uppercase tracking-widest text-primary mb-2">
+        {step.section}
+      </div>
+      <h2 className="text-2xl md:text-4xl font-black tracking-tight">{step.title}</h2>
+      {step.subtitle && <p className="mt-2 text-muted-foreground">{step.subtitle}</p>}
 
-      {step.kind !== "select" && step.kind !== "yesno" && (
-        <OkButton onClick={onNext} />
-      )}
-    </FieldShell>
-  );
-}
+      <div className="mt-8 space-y-8">
+        {step.fields.map((f, i) => (
+          <FieldRow
+            key={f.id}
+            field={f}
+            autoFocus={i === 0}
+            value={answers[f.id]}
+            onChange={(v) => setAnswer(f.id, v)}
+          />
+        ))}
+      </div>
 
-/* ---------------- Layout primitives ---------------- */
-
-function FieldShell({ label, section, children }: { label: string; section?: string; children: React.ReactNode }) {
-  return (
-    <div className="py-6">
-      {section && (
-        <div className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">
-          {section}
-        </div>
-      )}
-      <h3 className="text-2xl md:text-4xl font-bold tracking-tight leading-snug">{label}</h3>
-      <div className="mt-8">{children}</div>
+      <div className="mt-10 flex items-center gap-3">
+        <button
+          onClick={onNext}
+          className="inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-md px-6 py-3 font-semibold hover:opacity-90 transition"
+        >
+          Continue
+          <ChevronRight className="h-4 w-4" />
+        </button>
+        <span className="text-xs text-muted-foreground hidden md:inline">
+          press <kbd className="px-1.5 py-0.5 bg-muted rounded text-foreground">Enter</kbd>
+        </span>
+      </div>
     </div>
   );
 }
 
-function OkButton({ onClick, label = "OK" }: { onClick: () => void; label?: string }) {
+/* ---------------- Field row ---------------- */
+
+function FieldRow({
+  field,
+  value,
+  onChange,
+  autoFocus,
+}: {
+  field: FieldStep;
+  value: any;
+  onChange: (v: any) => void;
+  autoFocus?: boolean;
+}) {
   return (
-    <div className="mt-10 flex items-center gap-3">
-      <button
-        onClick={onClick}
-        className="inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-md px-6 py-3 font-semibold hover:opacity-90 transition"
-      >
-        {label}
-        <Check className="h-4 w-4" />
-      </button>
-      <span className="text-xs text-muted-foreground hidden md:inline">
-        press <kbd className="px-1.5 py-0.5 bg-muted rounded text-foreground">Enter</kbd>
-      </span>
+    <div>
+      <label className="block text-base md:text-lg font-semibold text-foreground mb-3">
+        {field.label}
+        {"unit" in field && field.unit ? (
+          <span className="ml-2 text-sm font-normal text-muted-foreground">({field.unit})</span>
+        ) : null}
+      </label>
+      <FieldInput field={field} value={value} onChange={onChange} autoFocus={autoFocus} />
     </div>
   );
+}
+
+function FieldInput({
+  field,
+  value,
+  onChange,
+  autoFocus,
+}: {
+  field: FieldStep;
+  value: any;
+  onChange: (v: any) => void;
+  autoFocus?: boolean;
+}) {
+  switch (field.kind) {
+    case "text":
+      return (
+        <TextField value={value ?? ""} onChange={onChange} placeholder={field.placeholder} autoFocus={autoFocus} />
+      );
+    case "longtext":
+      return <LongTextField value={value ?? ""} onChange={onChange} placeholder={field.placeholder} />;
+    case "number":
+      return <NumberField value={value ?? ""} onChange={onChange} unit={field.unit} autoFocus={autoFocus} />;
+    case "date":
+      return <DateTimeField type="date" value={value ?? ""} onChange={onChange} />;
+    case "time":
+      return <DateTimeField type="time" value={value ?? ""} onChange={onChange} />;
+    case "select":
+      return <SelectField value={value ?? ""} onChange={onChange} options={field.options} />;
+    case "yesno":
+      return <YesNoField value={value} onChange={onChange} />;
+    case "checklist":
+      return <ChecklistField value={value} onChange={onChange} actions={field.actions} withNotes={!!field.withNotes} />;
+    case "multinumber":
+      return <MultiNumberField value={value} onChange={onChange} fields={field.fields} unit={field.unit} />;
+    case "multiselect":
+      return <MultiSelectField value={value} onChange={onChange} options={field.options} />;
+  }
 }
 
 /* ---------------- Field components ---------------- */
 
 function TextField({
-  value, onChange, onEnter, placeholder,
-}: { value: string; onChange: (v: string) => void; onEnter: () => void; placeholder?: string }) {
+  value, onChange, placeholder, autoFocus,
+}: { value: string; onChange: (v: string) => void; placeholder?: string; autoFocus?: boolean }) {
   const ref = useRef<HTMLInputElement>(null);
-  useEffect(() => { ref.current?.focus(); }, []);
+  useEffect(() => { if (autoFocus) ref.current?.focus(); }, [autoFocus]);
   return (
     <input
       ref={ref}
       className="kavak-input"
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onEnter(); } }}
       placeholder={placeholder ?? "Type your answer..."}
     />
   );
 }
 
 function LongTextField({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
-  const ref = useRef<HTMLTextAreaElement>(null);
-  useEffect(() => { ref.current?.focus(); }, []);
   return (
     <textarea
-      ref={ref}
       className="kavak-textarea"
       rows={3}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder ?? "Type your answer... (Shift+Enter for newline)"}
+      placeholder={placeholder ?? "Type your answer..."}
     />
   );
 }
 
 function NumberField({
-  value, onChange, onEnter, unit,
-}: { value: string | number; onChange: (v: number | "") => void; onEnter: () => void; unit?: string }) {
+  value, onChange, unit, autoFocus,
+}: { value: string | number; onChange: (v: number | "") => void; unit?: string; autoFocus?: boolean }) {
   const ref = useRef<HTMLInputElement>(null);
-  useEffect(() => { ref.current?.focus(); }, []);
+  useEffect(() => { if (autoFocus) ref.current?.focus(); }, [autoFocus]);
   return (
     <div className="flex items-baseline gap-3">
       <input
@@ -373,27 +375,22 @@ function NumberField({
         className="kavak-input flex-1"
         value={value as any}
         onChange={(e) => onChange(e.target.value === "" ? "" : Number(e.target.value))}
-        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onEnter(); } }}
         placeholder="0"
       />
-      {unit && <span className="text-xl md:text-2xl text-muted-foreground">{unit}</span>}
+      {unit && <span className="text-base text-muted-foreground">{unit}</span>}
     </div>
   );
 }
 
 function DateTimeField({
-  type, value, onChange, onEnter,
-}: { type: "date" | "time"; value: string; onChange: (v: string) => void; onEnter: () => void }) {
-  const ref = useRef<HTMLInputElement>(null);
-  useEffect(() => { ref.current?.focus(); }, []);
+  type, value, onChange,
+}: { type: "date" | "time"; value: string; onChange: (v: string) => void }) {
   return (
     <input
-      ref={ref}
       type={type}
       className="kavak-input"
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onEnter(); } }}
     />
   );
 }
@@ -409,6 +406,7 @@ function SelectField({
         return (
           <button
             key={opt}
+            type="button"
             onClick={() => onChange(opt)}
             className={cn(
               "group flex items-center gap-3 text-left px-4 py-3 rounded-md border-2 transition",
@@ -419,7 +417,7 @@ function SelectField({
               "h-6 w-6 inline-flex items-center justify-center rounded text-xs font-bold border",
               selected ? "bg-primary text-primary-foreground border-primary" : "bg-muted border-border"
             )}>{key}</span>
-            <span className="text-base md:text-lg font-medium">{opt}</span>
+            <span className="text-base font-medium">{opt}</span>
             {selected && <Check className="h-4 w-4 text-primary ml-auto" />}
           </button>
         );
@@ -432,23 +430,20 @@ function YesNoField({ value, onChange }: { value: boolean | undefined; onChange:
   return (
     <div className="flex gap-3">
       {[
-        { label: "Yes", v: true, key: "Y" },
-        { label: "No", v: false, key: "N" },
+        { label: "Yes", v: true },
+        { label: "No", v: false },
       ].map((o) => {
         const selected = value === o.v;
         return (
           <button
             key={o.label}
+            type="button"
             onClick={() => onChange(o.v)}
             className={cn(
-              "flex items-center gap-3 px-6 py-3 rounded-md border-2 transition font-semibold",
-              selected ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+              "px-6 py-2.5 rounded-md border-2 transition font-semibold",
+              selected ? "border-primary bg-primary/5 text-primary" : "border-border hover:border-primary/50"
             )}
           >
-            <span className={cn(
-              "h-6 w-6 inline-flex items-center justify-center rounded text-xs font-bold border",
-              selected ? "bg-primary text-primary-foreground border-primary" : "bg-muted border-border"
-            )}>{o.key}</span>
             {o.label}
           </button>
         );
@@ -467,16 +462,17 @@ function ChecklistField({
     onChange({ ...v, actions: has ? v.actions.filter((x) => x !== a) : [...v.actions, a] });
   };
   return (
-    <div className="space-y-5">
+    <div className="space-y-3">
       <div className="flex flex-wrap gap-2">
         {actions.map((a) => {
           const selected = v.actions.includes(a);
           return (
             <button
               key={a}
+              type="button"
               onClick={() => toggle(a)}
               className={cn(
-                "px-4 py-2 rounded-full border-2 text-sm font-semibold transition",
+                "px-3.5 py-1.5 rounded-full border-2 text-sm font-semibold transition",
                 selected ? "bg-primary text-primary-foreground border-primary" : "border-border hover:border-primary/50"
               )}
             >
@@ -488,7 +484,7 @@ function ChecklistField({
       </div>
       {withNotes && (
         <textarea
-          className="kavak-textarea text-base md:text-lg"
+          className="kavak-textarea text-sm"
           rows={2}
           placeholder="Notes (optional)"
           value={v.notes}
@@ -504,22 +500,22 @@ function MultiNumberField({
 }: { value: Record<string, number> | undefined; onChange: (v: Record<string, number>) => void; fields: { id: string; label: string }[]; unit?: string }) {
   const v = value ?? {};
   return (
-    <div className="grid grid-cols-2 gap-4 max-w-xl">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-xl">
       {fields.map((f) => (
         <label key={f.id} className="block">
-          <span className="text-sm text-muted-foreground">{f.label}</span>
-          <div className="flex items-baseline gap-2 mt-1">
+          <span className="text-xs text-muted-foreground">{f.label}</span>
+          <div className="flex items-baseline gap-1.5 mt-1">
             <input
               type="number"
               inputMode="decimal"
-              className="w-full bg-transparent border-0 border-b-2 border-border focus:border-primary focus:outline-none text-2xl md:text-3xl font-medium py-2 transition-colors"
+              className="w-full bg-transparent border-0 border-b-2 border-border focus:border-primary focus:outline-none text-xl font-medium py-1.5 transition-colors"
               value={(v[f.id] as any) ?? ""}
               onChange={(e) =>
                 onChange({ ...v, [f.id]: e.target.value === "" ? (undefined as any) : Number(e.target.value) })
               }
               placeholder="0"
             />
-            {unit && <span className="text-base text-muted-foreground">{unit}</span>}
+            {unit && <span className="text-xs text-muted-foreground">{unit}</span>}
           </div>
         </label>
       ))}
@@ -535,15 +531,16 @@ function MultiSelectField({
     onChange(v.includes(o) ? v.filter((x) => x !== o) : [...v, o]);
   };
   return (
-    <div className="grid gap-2 max-w-xl">
+    <div className="grid sm:grid-cols-2 gap-2 max-w-2xl">
       {options.map((o) => {
         const selected = v.includes(o);
         return (
           <button
             key={o}
+            type="button"
             onClick={() => toggle(o)}
             className={cn(
-              "flex items-center gap-3 text-left px-4 py-3 rounded-md border-2 transition",
+              "flex items-center gap-3 text-left px-4 py-2.5 rounded-md border-2 transition",
               selected ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
             )}
           >
@@ -553,7 +550,7 @@ function MultiSelectField({
             )}>
               {selected && <Check className="h-3 w-3 text-primary-foreground" />}
             </span>
-            <span className="font-medium">{o}</span>
+            <span className="font-medium text-sm">{o}</span>
           </button>
         );
       })}
@@ -568,12 +565,10 @@ function ReviewView({
 }: { answers: Answers; onJumpTo: (id: string) => void; onSubmit: () => void; submitting: boolean }) {
   const grouped = useMemo(() => {
     const map = new Map<string, { id: string; label: string; value: any }[]>();
-    for (const s of steps) {
-      if (!("section" in s)) continue;
-      const sec = (s as any).section as string;
-      const arr = map.get(sec) ?? [];
-      arr.push({ id: s.id, label: (s as any).label, value: answers[s.id] });
-      map.set(sec, arr);
+    for (const f of allFieldSteps) {
+      const arr = map.get(f.section) ?? [];
+      arr.push({ id: f.id, label: f.label, value: answers[f.id] });
+      map.set(f.section, arr);
     }
     return Array.from(map.entries());
   }, [answers]);
