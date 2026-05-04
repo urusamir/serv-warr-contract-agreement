@@ -1,15 +1,10 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
-import logoWhite from "@/assets/kavak-logo-white-transparent.png";
 
 const Landing = () => {
   return (
     <main className="min-h-screen w-full bg-primary text-primary-foreground flex flex-col">
-      <header className="p-6 md:p-10">
-        <img src={logoWhite} alt="Kavak" className="h-7 md:h-9 w-auto" />
-      </header>
-
       <section className="flex-1 flex flex-col items-center justify-center px-6 text-center">
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
