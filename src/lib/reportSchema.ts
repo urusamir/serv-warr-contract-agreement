@@ -216,7 +216,7 @@ export const steps: Step[] = [
     checklist("engine.battery_electrolyte_connections", "Battery Electrolyte and Connections", SECTIONS.engine, "p-engine-1", tier("C/L", "C/L", "C/L")),
     checklist("engine.battery_report", "Battery Report", SECTIONS.engine, "p-engine-1", tier("I", "I", "I")),
   ]),
-  page("p-engine-2", SECTIONS.engine, "Engine Room — Fluids & Belts", [
+  page("p-engine-2", SECTIONS.engine, "Engine Room", [
     checklist("engine.brake_fluid", "Brake Fluid", SECTIONS.engine, "p-engine-2", tier("I", "I", "R")),
     checklist("engine.windshield_fluid", "Windshield Fluid", SECTIONS.engine, "p-engine-2", tier("I", "I", "I")),
     checklist("engine.power_steering_fluid", "Power Steering Fluid", SECTIONS.engine, "p-engine-2", tier("I", "I", "I")),
