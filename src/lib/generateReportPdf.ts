@@ -205,7 +205,7 @@ export async function generateReportPdf(answers: Answers): Promise<jsPDF> {
         {
           content: SECTIONS.vehicle,
           colSpan: 2,
-          styles: { fillColor: KAVAK_BLUE, textColor: 255, halign: "left" },
+          styles: { fillColor: KAVAK_BLACK, textColor: 255, halign: "left" },
         },
       ],
     ],
@@ -258,7 +258,7 @@ export async function generateReportPdf(answers: Answers): Promise<jsPDF> {
           {
             content: sectionLabel,
             colSpan: 3,
-            styles: { fillColor: KAVAK_BLUE, textColor: 255, halign: "left" },
+            styles: { fillColor: KAVAK_BLACK, textColor: 255, halign: "left" },
           },
         ],
         [
