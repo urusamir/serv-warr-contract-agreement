@@ -92,9 +92,15 @@ function drawCoverPage(
   doc.setFontSize(18);
   doc.text(tierLabel, pageWidth / 2, stripY + stripH * 0.65, { align: "center" });
 
-  // Footer line
+  // Cover the baked-in footer text ("Generated: ..." + "Kavak Service Report • Page 1 of 4")
+  // at the bottom of the artwork with a tall black band, then draw only the
+  // dynamic generated timestamp.
+  doc.setFillColor(0, 0, 0);
+  doc.rect(0, pageHeight - 90, pageWidth, 90, "F");
+
+  doc.setTextColor(220, 220, 220);
+  doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
-  doc.setTextColor(200, 200, 200);
   doc.text(`Generated: ${generatedAt}`, pageWidth / 2, pageHeight - 40, { align: "center" });
 }
 
@@ -264,9 +270,9 @@ export async function generateReportPdf(answers: Answers): Promise<jsPDF> {
   renderInspectionSection(SECTIONS.engine);
   renderInspectionSection(SECTIONS.final);
 
-  // Footer page numbers
+  // Footer page numbers — skip page 1 (cover) so we don't fight the cover artwork
   const pageCount = doc.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
+  for (let i = 2; i <= pageCount; i++) {
     doc.setPage(i);
     doc.setFontSize(8);
     doc.setTextColor(120, 120, 120);
