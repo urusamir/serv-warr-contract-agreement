@@ -1,6 +1,12 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { allFieldSteps as steps, SECTIONS } from "./reportSchema";
+import {
+  allFieldSteps as fields,
+  SECTIONS,
+  SERVICE_TIER_LABEL,
+  getActionsForTier,
+  type ServiceTier,
+} from "./reportSchema";
 
 type Answers = Record<string, any>;
 
@@ -28,7 +34,10 @@ export function generateReportPdf(answers: Answers): jsPDF {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 40;
+  const tier: ServiceTier | undefined = answers["service.type"];
+  const tierLabel = tier ? SERVICE_TIER_LABEL[tier] : "—";
 
+  // Header band
   doc.setFillColor(...KAVAK_BLUE);
   doc.rect(0, 0, pageWidth, 70, "F");
   doc.setTextColor(255, 255, 255);
@@ -37,31 +46,44 @@ export function generateReportPdf(answers: Answers): jsPDF {
   doc.text("KAVAK", margin, 30);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(12);
-  doc.text("Vehicle Service Report", margin, 50);
+  doc.text("Periodic Service Maintenance Check List", margin, 50);
 
-  doc.setTextColor(255, 255, 255);
   doc.setFontSize(9);
   const submittedAt = new Date().toLocaleString();
-  doc.text(`Generated: ${submittedAt}`, pageWidth - margin, 50, { align: "right" });
+  doc.text(`Generated: ${submittedAt}`, pageWidth - margin, 30, { align: "right" });
+  doc.setFont("helvetica", "bold");
+  doc.text(`Service Type: ${tierLabel}`, pageWidth - margin, 50, { align: "right" });
 
   doc.setTextColor(0, 0, 0);
   let cursorY = 90;
 
+  // Vehicle & Customer summary
   const vehicleRows: [string, string][] = [
     ["Vehicle make & model", v(answers, "vehicle.make_model")],
     ["Registration number", v(answers, "vehicle.registration_number")],
     ["VIN", v(answers, "vehicle.vin")],
+    ["Service type / mileage", v(answers, "vehicle.service_type_mileage")],
     ["Customer name", v(answers, "customer.name")],
     ["Customer contact", v(answers, "customer.contact")],
-    ["Service advisor", `${v(answers, "service_advisor.name")} ${v(answers, "service_advisor.number") ? "(" + v(answers, "service_advisor.number") + ")" : ""}`.trim()],
+    [
+      "Service advisor",
+      `${v(answers, "service_advisor.name")}${v(answers, "service_advisor.number") ? " (" + v(answers, "service_advisor.number") + ")" : ""}`.trim(),
+    ],
     ["Service date / time", `${v(answers, "vehicle.service_date")} ${v(answers, "vehicle.service_time")}`.trim()],
     ["Service plan", v(answers, "vehicle.service_plan")],
-    ["Service type / mileage", v(answers, "vehicle.service_type_mileage")],
   ];
 
   autoTable(doc, {
     startY: cursorY,
-    head: [[{ content: SECTIONS.vehicle, colSpan: 2, styles: { fillColor: KAVAK_BLUE, textColor: 255, halign: "left" } }]],
+    head: [
+      [
+        {
+          content: SECTIONS.vehicle,
+          colSpan: 2,
+          styles: { fillColor: KAVAK_BLUE, textColor: 255, halign: "left" },
+        },
+      ],
+    ],
     body: vehicleRows,
     theme: "grid",
     styles: { fontSize: 10, cellPadding: 6 },
@@ -71,31 +93,35 @@ export function generateReportPdf(answers: Answers): jsPDF {
   cursorY = (doc as any).lastAutoTable.finalY + 16;
 
   const renderInspectionSection = (sectionLabel: string) => {
-    const sectionSteps = steps.filter(
-      (s) => "section" in s && (s as any).section === sectionLabel
-    );
-    if (sectionSteps.length === 0) return;
+    const sectionFields = fields.filter((f) => f.section === sectionLabel);
+    if (sectionFields.length === 0) return;
 
-    const body = sectionSteps.map((s) => {
-      const label = (s as any).label as string;
+    const body = sectionFields.map((f) => {
+      const ans = answers[f.id];
+      const label = f.label;
       let action = "";
       let observations = "";
-      const ans = answers[(s as any).id];
 
-      if (s.kind === "checklist") {
-        action = (ans?.actions ?? []).join(", ");
+      if (f.kind === "checklist") {
+        const tierActions = getActionsForTier(f, tier);
+        if (tierActions.length === 0) {
+          action = "Not applicable";
+        } else {
+          const performed: string[] = ans?.actions ?? [];
+          action = tierActions
+            .map((a) => `${performed.includes(a) ? "[x]" : "[ ]"} ${a}`)
+            .join("\n");
+        }
         observations = ans?.notes ?? "";
-      } else if (s.kind === "multinumber") {
+      } else if (f.kind === "multinumber") {
         action = "Measure";
-        observations = Object.entries(ans ?? {})
-          .map(([k, val]) => `${k.toUpperCase()}: ${val}${(s as any).unit ?? ""}`)
-          .join("  ");
-      } else if (s.kind === "yesno") {
-        action = ans === true ? "Yes" : ans === false ? "No" : "";
-      } else if (s.kind === "number") {
-        observations = ans !== undefined && ans !== "" ? `${ans} ${(s as any).unit ?? ""}` : "";
-      } else if (s.kind === "select" || s.kind === "text" || s.kind === "longtext" || s.kind === "date" || s.kind === "time") {
-        observations = ans ?? "";
+        observations = f.fields
+          .map((mf) => {
+            const val = ans?.[mf.id];
+            return val !== undefined && val !== "" ? `${mf.label}: ${val}${f.unit ?? ""}` : null;
+          })
+          .filter(Boolean)
+          .join("  ·  ");
       }
       return [label, action, observations];
     });
@@ -104,12 +130,16 @@ export function generateReportPdf(answers: Answers): jsPDF {
       startY: cursorY,
       head: [
         [
-          { content: sectionLabel, colSpan: 3, styles: { fillColor: KAVAK_BLUE, textColor: 255, halign: "left" } },
+          {
+            content: sectionLabel,
+            colSpan: 3,
+            styles: { fillColor: KAVAK_BLUE, textColor: 255, halign: "left" },
+          },
         ],
         [
           { content: "Item", styles: { fillColor: [240, 240, 240], textColor: 0 } },
           { content: "Action", styles: { fillColor: [240, 240, 240], textColor: 0 } },
-          { content: "Observations", styles: { fillColor: [240, 240, 240], textColor: 0 } },
+          { content: "Observations / Remarks", styles: { fillColor: [240, 240, 240], textColor: 0 } },
         ],
       ],
       body,
@@ -117,40 +147,23 @@ export function generateReportPdf(answers: Answers): jsPDF {
       styles: { fontSize: 9, cellPadding: 5, valign: "top" },
       columnStyles: {
         0: { cellWidth: 200, fontStyle: "bold" },
-        1: { cellWidth: 90 },
+        1: { cellWidth: 130 },
         2: { cellWidth: "auto" },
       },
       margin: { left: margin, right: margin },
-      didDrawPage: (data) => {
-        doc.setFillColor(...KAVAK_BLUE);
-        doc.rect(0, 0, pageWidth, 20, "F");
-      },
     });
     cursorY = (doc as any).lastAutoTable.finalY + 16;
   };
 
-  renderInspectionSection(SECTIONS.exterior);
+  // Order matches the source PDF
   renderInspectionSection(SECTIONS.interior);
+  renderInspectionSection(SECTIONS.exterior);
   renderInspectionSection(SECTIONS.chassis);
+  renderInspectionSection(SECTIONS.wheel);
   renderInspectionSection(SECTIONS.engine);
   renderInspectionSection(SECTIONS.final);
 
-  const refurbRows: [string, string][] = [
-    ["Suggested services", v(answers, "refurb.selected")],
-    ["A/C filter condition", v(answers, "refurb.ac_filter_condition")],
-    ["Air filter condition", v(answers, "refurb.air_filter_condition")],
-    ["Other recommendations", v(answers, "refurb.other")],
-  ];
-  autoTable(doc, {
-    startY: cursorY,
-    head: [[{ content: SECTIONS.refurb, colSpan: 2, styles: { fillColor: KAVAK_BLUE, textColor: 255, halign: "left" } }]],
-    body: refurbRows,
-    theme: "grid",
-    styles: { fontSize: 10, cellPadding: 6 },
-    columnStyles: { 0: { fontStyle: "bold", cellWidth: 180 }, 1: { cellWidth: "auto" } },
-    margin: { left: margin, right: margin },
-  });
-
+  // Footer page numbers
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
@@ -160,7 +173,7 @@ export function generateReportPdf(answers: Answers): jsPDF {
       `Kavak Service Report  •  Page ${i} of ${pageCount}`,
       pageWidth / 2,
       doc.internal.pageSize.getHeight() - 18,
-      { align: "center" }
+      { align: "center" },
     );
   }
 
