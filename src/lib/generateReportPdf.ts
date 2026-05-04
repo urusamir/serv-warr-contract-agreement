@@ -152,7 +152,7 @@ export async function generateReportPdf(answers: Answers): Promise<jsPDF> {
   doc.text("KAVAK", margin, 30);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(12);
-  doc.text("Periodic Service Maintenance Check List", margin, 50);
+  doc.text("Car Service Report", margin, 50);
 
   doc.setFontSize(9);
   doc.text(`Generated: ${generatedAt}`, pageWidth - margin, 30, { align: "right" });
