@@ -80,28 +80,40 @@ function drawCoverPage(
     }
   }
 
-  // The artwork has a static "Minor Service" subtitle baked in.
-  // Cover that strip generously with black, then draw the dynamic tier label.
-  const stripY = pageHeight * 0.36;
-  const stripH = pageHeight * 0.08;
+  // The artwork has a static "Minor Service" subtitle baked in just below
+  // "Car Service Report". Cover it with black, then draw the dynamic tier label.
+  const stripY = pageHeight * 0.40;
+  const stripH = pageHeight * 0.07;
   doc.setFillColor(0, 0, 0);
   doc.rect(0, stripY, pageWidth, stripH, "F");
 
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(18);
-  doc.text(tierLabel, pageWidth / 2, stripY + stripH * 0.65, { align: "center" });
+  doc.text(tierLabel, pageWidth / 2, stripY + stripH * 0.7, { align: "center" });
 
   // Cover the baked-in footer text ("Generated: ..." + "Kavak Service Report • Page 1 of 4")
   // at the bottom of the artwork with a tall black band, then draw only the
-  // dynamic generated timestamp.
+  // dynamic generated timestamp + correct page number.
   doc.setFillColor(0, 0, 0);
   doc.rect(0, pageHeight - 90, pageWidth, 90, "F");
 
   doc.setTextColor(220, 220, 220);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
-  doc.text(`Generated: ${generatedAt}`, pageWidth / 2, pageHeight - 40, { align: "center" });
+  doc.text(`Generated: ${generatedAt}`, pageWidth / 2, pageHeight - 50, { align: "center" });
+
+  doc.setFontSize(9);
+  doc.setTextColor(180, 180, 180);
+  const totalPages = (doc as any).internal.getNumberOfPages
+    ? (doc as any).internal.getNumberOfPages()
+    : 4;
+  doc.text(
+    `Kavak Service Report  •  Page 1 of ${totalPages}`,
+    pageWidth / 2,
+    pageHeight - 30,
+    { align: "center" },
+  );
 }
 
 async function loadImageWithSize(
