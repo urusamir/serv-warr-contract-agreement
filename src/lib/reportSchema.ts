@@ -163,7 +163,7 @@ export const steps: Step[] = [
     checklist("chassis.drive_shaft_boots", "Drive Shaft Boots", SECTIONS.chassis, "p-chassis-2", tier("I", "I", "I")),
     checklist("chassis.ball_joints_dust_cover", "Ball Joints and Dust Cover", SECTIONS.chassis, "p-chassis-2", tier("I", "I", "I")),
   ]),
-  page("p-chassis-3", SECTIONS.chassis, "Under Chassis — Suspension & Mounts", [
+  page("p-chassis-3", SECTIONS.chassis, "Under Chassis", [
     checklist("chassis.shock_absorbers", "Front and Rear Shock Absorber", SECTIONS.chassis, "p-chassis-3", tier("I", "I", "I")),
     checklist("chassis.suspension_bush", "Front and Rear Suspension Bush", SECTIONS.chassis, "p-chassis-3", tier("I", "I", "I")),
     checklist("chassis.wheel_bearings", "Wheel Bearings", SECTIONS.chassis, "p-chassis-3", tier("I", "I", "I")),
