@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
-import logoWhite from "@/assets/kavak-logo-white.png";
+import logoWhite from "@/assets/kavak-logo-white-transparent.png";
 
 const Landing = () => {
   return (
