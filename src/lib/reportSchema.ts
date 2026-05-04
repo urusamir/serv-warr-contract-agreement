@@ -146,7 +146,7 @@ export const steps: Step[] = [
   ]),
 
   // ===== Under Chassis (3 pages, 18 items) =====
-  page("p-chassis-1", SECTIONS.chassis, "Under Chassis — Fluids", [
+  page("p-chassis-1", SECTIONS.chassis, "Under Chassis", [
     checklist("chassis.engine_oil_filter", "Engine Oil and Oil Filter", SECTIONS.chassis, "p-chassis-1", tier("R", "R", "R")),
     checklist("chassis.mtm_atm_oil", "MTM/ATM Oil", SECTIONS.chassis, "p-chassis-1", tier("I", "I", "I")),
     checklist("chassis.atm_oil_ws", "ATM Oil (WS)", SECTIONS.chassis, "p-chassis-1", tier("I", "I", "I")),
