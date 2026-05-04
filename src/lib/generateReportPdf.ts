@@ -65,10 +65,7 @@ export function generateReportPdf(answers: Answers): jsPDF {
     ["Service type / mileage", v(answers, "vehicle.service_type_mileage")],
     ["Customer name", v(answers, "customer.name")],
     ["Customer contact", v(answers, "customer.contact")],
-    [
-      "Service advisor",
-      `${v(answers, "service_advisor.name")}${v(answers, "service_advisor.number") ? " (" + v(answers, "service_advisor.number") + ")" : ""}`.trim(),
-    ],
+    ["Service advisor", v(answers, "service_advisor.name")],
     ["Service date / time", `${v(answers, "vehicle.service_date")} ${v(answers, "vehicle.service_time")}`.trim()],
     ["Service plan", v(answers, "vehicle.service_plan")],
   ];
