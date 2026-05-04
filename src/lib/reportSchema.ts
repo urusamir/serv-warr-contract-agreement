@@ -208,7 +208,7 @@ export const steps: Step[] = [
   ]),
 
   // ===== Engine Room (2 pages, 11 items) =====
-  page("p-engine-1", SECTIONS.engine, "Engine Room — Filters & Ignition", [
+  page("p-engine-1", SECTIONS.engine, "Engine Room", [
     checklist("engine.air_filter", "Air Filter", SECTIONS.engine, "p-engine-1", tier("C", "C", "R")),
     checklist("engine.fuel_filter", "Fuel Filter", SECTIONS.engine, "p-engine-1", tier("I", "I", "I")),
     checklist("engine.spark_plugs_normal", "Spark Plugs (Normal)", SECTIONS.engine, "p-engine-1", tier("I", "I", "I")),
