@@ -155,7 +155,7 @@ export const steps: Step[] = [
     checklist("chassis.differential_oil", "Differential Oil", SECTIONS.chassis, "p-chassis-1", tier("I", "I", "I")),
     checklist("chassis.coolant", "Coolant", SECTIONS.chassis, "p-chassis-1", tier("I", "I", "I")),
   ]),
-  page("p-chassis-2", SECTIONS.chassis, "Under Chassis — Lines & Steering", [
+  page("p-chassis-2", SECTIONS.chassis, "Under Chassis", [
     checklist("chassis.brake_pipes_hoses", "Brake Pipes & Hoses", SECTIONS.chassis, "p-chassis-2", tier("I", "I", "I")),
     checklist("chassis.fuel_lines_connections", "Fuel Lines & Connections", SECTIONS.chassis, "p-chassis-2", tier("I", "I", "I")),
     checklist("chassis.steering_wear_leaks", "Steering Wear and Leaks", SECTIONS.chassis, "p-chassis-2", tier("I", "I", "I")),
