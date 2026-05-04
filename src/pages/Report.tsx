@@ -3,7 +3,15 @@ import { Link, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowDown, ArrowLeft, ArrowUp, Check, ChevronRight, Loader2, Send } from "lucide-react";
 import logoBlack from "@/assets/kavak-logo-black.png";
-import { steps, allFieldSteps, type Step, type FieldStep } from "@/lib/reportSchema";
+import {
+  steps,
+  allFieldSteps,
+  type Step,
+  type FieldStep,
+  type ServiceTier,
+  SERVICE_TIER_LABEL,
+  getActionsForTier,
+} from "@/lib/reportSchema";
 import { buildPayload } from "@/lib/buildPayload";
 import { downloadReportPdf } from "@/lib/generateReportPdf";
 import { toast } from "sonner";
@@ -23,18 +31,14 @@ const Report = () => {
   const navigate = useNavigate();
   const [index, setIndex] = useState(0);
   const [direction, setDirection] = useState(1);
-  const [answers, setAnswers] = useState<Answers>(() => {
-    const init: Answers = {};
-    for (const f of allFieldSteps) {
-      if (f.kind === "text" && f.defaultValue) init[f.id] = f.defaultValue;
-    }
-    return init;
-  });
+  const [answers, setAnswers] = useState<Answers>({});
   const [submitting, setSubmitting] = useState(false);
 
   const total = steps.length;
   const step = steps[index];
   const progress = ((index + 1) / total) * 100;
+
+  const tier: ServiceTier | undefined = answers["service.type"];
 
   const goNext = useCallback(() => {
     setDirection(1);
@@ -76,7 +80,21 @@ const Report = () => {
     }
   }, [answers, navigate]);
 
-  // Keyboard shortcuts (only Enter on intro/review jumps; arrows for navigation)
+  // Block forward navigation past service-type until a tier is chosen
+  const canAdvance = useCallback(() => {
+    if (step.kind === "service-type") return !!tier;
+    return true;
+  }, [step, tier]);
+
+  const tryGoNext = useCallback(() => {
+    if (!canAdvance()) {
+      toast.error("Please select a service type to continue.");
+      return;
+    }
+    goNext();
+  }, [canAdvance, goNext]);
+
+  // Keyboard shortcuts
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
@@ -89,12 +107,12 @@ const Report = () => {
       if (e.key === "Enter" && !e.shiftKey && !isEditable) {
         e.preventDefault();
         if (step.kind === "review") submit();
-        else goNext();
+        else tryGoNext();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [goNext, step, submit]);
+  }, [tryGoNext, step, submit]);
 
   const jumpToField = useCallback((fieldId: string) => {
     const f = allFieldSteps.find((x) => x.id === fieldId);
@@ -131,9 +149,10 @@ const Report = () => {
             >
               <StepView
                 step={step}
+                tier={tier}
                 answers={answers}
                 setAnswer={setAnswer}
-                onNext={goNext}
+                onNext={tryGoNext}
                 onSubmit={submit}
                 submitting={submitting}
                 onJumpTo={jumpToField}
@@ -175,7 +194,7 @@ const Report = () => {
               <ArrowUp className="h-4 w-4" />
             </button>
             <button
-              onClick={goNext}
+              onClick={tryGoNext}
               disabled={index === total - 1}
               className="h-9 w-9 rounded-md border border-border bg-background hover:bg-muted disabled:opacity-30 transition flex items-center justify-center"
               aria-label="Next"
@@ -195,6 +214,7 @@ export default Report;
 
 function StepView({
   step,
+  tier,
   answers,
   setAnswer,
   onNext,
@@ -203,6 +223,7 @@ function StepView({
   onJumpTo,
 }: {
   step: Step;
+  tier: ServiceTier | undefined;
   answers: Answers;
   setAnswer: (id: string, v: any) => void;
   onNext: () => void;
@@ -210,25 +231,27 @@ function StepView({
   submitting: boolean;
   onJumpTo: (id: string) => void;
 }) {
-  if (step.kind === "intro") {
+  if (step.kind === "service-type") {
     return (
-      <div className="text-center py-10">
-        <h1 className="text-4xl md:text-6xl font-black tracking-tight">{step.title}</h1>
-        {step.subtitle && (
-          <p className="mt-5 text-lg md:text-xl text-muted-foreground">{step.subtitle}</p>
-        )}
-        <button
-          onClick={onNext}
-          className="mt-10 inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-full px-8 py-4 font-semibold hover:opacity-90 transition"
-        >
-          Start <ChevronRight className="h-5 w-5" />
-        </button>
-      </div>
+      <ServiceTypeView
+        value={tier}
+        onChange={(v) => setAnswer("service.type", v)}
+        onNext={onNext}
+        title={step.title}
+        subtitle={step.subtitle}
+      />
     );
   }
 
   if (step.kind === "review") {
-    return <ReviewView answers={answers} onJumpTo={onJumpTo} onSubmit={onSubmit} submitting={submitting} />;
+    return (
+      <ReviewView
+        answers={answers}
+        onJumpTo={onJumpTo}
+        onSubmit={onSubmit}
+        submitting={submitting}
+      />
+    );
   }
 
   // Page with multiple fields
@@ -236,6 +259,11 @@ function StepView({
     <div className="py-4">
       <div className="text-xs font-semibold uppercase tracking-widest text-primary mb-2">
         {step.section}
+        {tier && (
+          <span className="ml-2 text-foreground/50 normal-case font-normal">
+            · {SERVICE_TIER_LABEL[tier]}
+          </span>
+        )}
       </div>
       <h2 className="text-2xl md:text-4xl font-black tracking-tight">{step.title}</h2>
       {step.subtitle && <p className="mt-2 text-muted-foreground">{step.subtitle}</p>}
@@ -245,6 +273,7 @@ function StepView({
           <FieldRow
             key={f.id}
             field={f}
+            tier={tier}
             autoFocus={i === 0}
             value={answers[f.id]}
             onChange={(v) => setAnswer(f.id, v)}
@@ -268,15 +297,86 @@ function StepView({
   );
 }
 
+/* ---------------- Service Type ---------------- */
+
+function ServiceTypeView({
+  value,
+  onChange,
+  onNext,
+  title,
+  subtitle,
+}: {
+  value: ServiceTier | undefined;
+  onChange: (v: ServiceTier) => void;
+  onNext: () => void;
+  title: string;
+  subtitle?: string;
+}) {
+  const options: { key: ServiceTier; label: string; description: string }[] = [
+    { key: "minor", label: "Minor Service", description: "Routine quick service items." },
+    { key: "intermediate", label: "Intermediate Service", description: "Mid-tier inspection & part replacements." },
+    { key: "major", label: "Major Service", description: "Comprehensive service incl. timing belt." },
+  ];
+
+  return (
+    <div className="py-4">
+      <div className="text-xs font-semibold uppercase tracking-widest text-primary mb-2">Step 1</div>
+      <h2 className="text-3xl md:text-5xl font-black tracking-tight">{title}</h2>
+      {subtitle && <p className="mt-3 text-muted-foreground">{subtitle}</p>}
+
+      <div className="mt-8 grid gap-3 max-w-xl">
+        {options.map((o, i) => {
+          const selected = value === o.key;
+          const key = String.fromCharCode(65 + i);
+          return (
+            <button
+              key={o.key}
+              type="button"
+              onClick={() => onChange(o.key)}
+              className={cn(
+                "flex items-start gap-4 text-left px-5 py-4 rounded-md border-2 transition",
+                selected ? "border-primary bg-primary/5" : "border-border hover:border-primary/50",
+              )}
+            >
+              <span className={cn(
+                "h-8 w-8 inline-flex items-center justify-center rounded text-sm font-bold border shrink-0",
+                selected ? "bg-primary text-primary-foreground border-primary" : "bg-muted border-border",
+              )}>{key}</span>
+              <span className="flex-1">
+                <span className="block text-lg font-semibold">{o.label}</span>
+                <span className="block text-sm text-muted-foreground">{o.description}</span>
+              </span>
+              {selected && <Check className="h-5 w-5 text-primary mt-1" />}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-10 flex items-center gap-3">
+        <button
+          onClick={onNext}
+          disabled={!value}
+          className="inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-md px-6 py-3 font-semibold hover:opacity-90 transition disabled:opacity-40"
+        >
+          Continue
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ---------------- Field row ---------------- */
 
 function FieldRow({
   field,
+  tier,
   value,
   onChange,
   autoFocus,
 }: {
   field: FieldStep;
+  tier: ServiceTier | undefined;
   value: any;
   onChange: (v: any) => void;
   autoFocus?: boolean;
@@ -289,27 +389,27 @@ function FieldRow({
           <span className="ml-2 text-sm font-normal text-muted-foreground">({field.unit})</span>
         ) : null}
       </label>
-      <FieldInput field={field} value={value} onChange={onChange} autoFocus={autoFocus} />
+      <FieldInput field={field} tier={tier} value={value} onChange={onChange} autoFocus={autoFocus} />
     </div>
   );
 }
 
 function FieldInput({
   field,
+  tier,
   value,
   onChange,
   autoFocus,
 }: {
   field: FieldStep;
+  tier: ServiceTier | undefined;
   value: any;
   onChange: (v: any) => void;
   autoFocus?: boolean;
 }) {
   switch (field.kind) {
     case "text":
-      return (
-        <TextField value={value ?? ""} onChange={onChange} placeholder={field.placeholder} autoFocus={autoFocus} />
-      );
+      return <TextField value={value ?? ""} onChange={onChange} placeholder={field.placeholder} autoFocus={autoFocus} />;
     case "longtext":
       return <LongTextField value={value ?? ""} onChange={onChange} placeholder={field.placeholder} />;
     case "number":
@@ -322,12 +422,19 @@ function FieldInput({
       return <SelectField value={value ?? ""} onChange={onChange} options={field.options} />;
     case "yesno":
       return <YesNoField value={value} onChange={onChange} />;
-    case "checklist":
-      return <ChecklistField value={value} onChange={onChange} actions={field.actions} withNotes={!!field.withNotes} />;
+    case "checklist": {
+      const actions = getActionsForTier(field, tier);
+      return (
+        <ChecklistField
+          value={value}
+          onChange={onChange}
+          actions={actions}
+          withNotes={!!field.withNotes}
+        />
+      );
+    }
     case "multinumber":
       return <MultiNumberField value={value} onChange={onChange} fields={field.fields} unit={field.unit} />;
-    case "multiselect":
-      return <MultiSelectField value={value} onChange={onChange} options={field.options} />;
   }
 }
 
@@ -410,12 +517,12 @@ function SelectField({
             onClick={() => onChange(opt)}
             className={cn(
               "group flex items-center gap-3 text-left px-4 py-3 rounded-md border-2 transition",
-              selected ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+              selected ? "border-primary bg-primary/5" : "border-border hover:border-primary/50",
             )}
           >
             <span className={cn(
               "h-6 w-6 inline-flex items-center justify-center rounded text-xs font-bold border",
-              selected ? "bg-primary text-primary-foreground border-primary" : "bg-muted border-border"
+              selected ? "bg-primary text-primary-foreground border-primary" : "bg-muted border-border",
             )}>{key}</span>
             <span className="text-base font-medium">{opt}</span>
             {selected && <Check className="h-4 w-4 text-primary ml-auto" />}
@@ -441,7 +548,7 @@ function YesNoField({ value, onChange }: { value: boolean | undefined; onChange:
             onClick={() => onChange(o.v)}
             className={cn(
               "px-6 py-2.5 rounded-md border-2 transition font-semibold",
-              selected ? "border-primary bg-primary/5 text-primary" : "border-border hover:border-primary/50"
+              selected ? "border-primary bg-primary/5 text-primary" : "border-border hover:border-primary/50",
             )}
           >
             {o.label}
@@ -457,6 +564,26 @@ function ChecklistField({
   value, onChange, actions, withNotes,
 }: { value: ChecklistValue | undefined; onChange: (v: ChecklistValue) => void; actions: string[]; withNotes: boolean }) {
   const v: ChecklistValue = value ?? { actions: [], notes: "" };
+
+  if (actions.length === 0) {
+    return (
+      <div className="space-y-3">
+        <div className="inline-flex items-center px-3 py-1.5 rounded-md bg-muted text-muted-foreground text-sm font-medium border border-border">
+          Not part of this service
+        </div>
+        {withNotes && (
+          <textarea
+            className="kavak-textarea text-sm"
+            rows={2}
+            placeholder="Notes (optional)"
+            value={v.notes}
+            onChange={(e) => onChange({ ...v, notes: e.target.value })}
+          />
+        )}
+      </div>
+    );
+  }
+
   const toggle = (a: string) => {
     const has = v.actions.includes(a);
     onChange({ ...v, actions: has ? v.actions.filter((x) => x !== a) : [...v.actions, a] });
@@ -473,7 +600,7 @@ function ChecklistField({
               onClick={() => toggle(a)}
               className={cn(
                 "px-3.5 py-1.5 rounded-full border-2 text-sm font-semibold transition",
-                selected ? "bg-primary text-primary-foreground border-primary" : "border-border hover:border-primary/50"
+                selected ? "bg-primary text-primary-foreground border-primary" : "border-border hover:border-primary/50",
               )}
             >
               {selected && <Check className="h-3.5 w-3.5 inline mr-1.5 -mt-0.5" />}
@@ -523,46 +650,12 @@ function MultiNumberField({
   );
 }
 
-function MultiSelectField({
-  value, onChange, options,
-}: { value: string[] | undefined; onChange: (v: string[]) => void; options: string[] }) {
-  const v = value ?? [];
-  const toggle = (o: string) => {
-    onChange(v.includes(o) ? v.filter((x) => x !== o) : [...v, o]);
-  };
-  return (
-    <div className="grid sm:grid-cols-2 gap-2 max-w-2xl">
-      {options.map((o) => {
-        const selected = v.includes(o);
-        return (
-          <button
-            key={o}
-            type="button"
-            onClick={() => toggle(o)}
-            className={cn(
-              "flex items-center gap-3 text-left px-4 py-2.5 rounded-md border-2 transition",
-              selected ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
-            )}
-          >
-            <span className={cn(
-              "h-5 w-5 rounded border-2 inline-flex items-center justify-center",
-              selected ? "bg-primary border-primary" : "border-border"
-            )}>
-              {selected && <Check className="h-3 w-3 text-primary-foreground" />}
-            </span>
-            <span className="font-medium text-sm">{o}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 /* ---------------- Review ---------------- */
 
 function ReviewView({
   answers, onJumpTo, onSubmit, submitting,
 }: { answers: Answers; onJumpTo: (id: string) => void; onSubmit: () => void; submitting: boolean }) {
+  const tier: ServiceTier | undefined = answers["service.type"];
   const grouped = useMemo(() => {
     const map = new Map<string, { id: string; label: string; value: any }[]>();
     for (const f of allFieldSteps) {
@@ -581,7 +674,10 @@ function ReviewView({
       <h2 className="text-3xl md:text-5xl font-black tracking-tight">
         Looks good? Submit your report.
       </h2>
-      <p className="mt-3 text-muted-foreground">Click any answer to edit it.</p>
+      <p className="mt-3 text-muted-foreground">
+        {tier ? `Service type: ${SERVICE_TIER_LABEL[tier]}. ` : ""}
+        Click any answer to edit it.
+      </p>
 
       <div className="mt-8 space-y-6 max-h-[50vh] overflow-y-auto pr-2">
         {grouped.map(([section, items]) => (
