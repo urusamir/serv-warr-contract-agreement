@@ -7,7 +7,7 @@ import {
   getActionsForTier,
   type ServiceTier,
 } from "./reportSchema";
-import logoWhiteOnBlue from "@/assets/kavak-logo-white-on-blue.png";
+import logoWhite from "@/assets/kavak-logo-white.png";
 
 type Answers = Record<string, any>;
 
@@ -43,40 +43,54 @@ async function loadImageDataUrl(url: string): Promise<string> {
   });
 }
 
-function drawCoverPage(doc: jsPDF, logoDataUrl: string | null, tierLabel: string, generatedAt: string) {
+function drawCoverPage(
+  doc: jsPDF,
+  logo: { dataUrl: string; width: number; height: number } | null,
+  tierLabel: string,
+  generatedAt: string,
+) {
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
-  // Full-bleed Kavak blue cover
-  doc.setFillColor(...KAVAK_BLUE);
+  // Full-bleed black cover
+  doc.setFillColor(0, 0, 0);
   doc.rect(0, 0, pageWidth, pageHeight, "F");
 
-  // Logo (centered upper third)
-  if (logoDataUrl) {
-    const logoW = 220;
-    const logoH = 80;
+  // Logo (centered upper area), preserve aspect ratio so it doesn't appear shrunk
+  if (logo) {
+    const targetW = pageWidth * 0.45; // ~45% of page width
+    const aspect = logo.height / logo.width;
+    const logoW = targetW;
+    const logoH = targetW * aspect;
     try {
-      doc.addImage(logoDataUrl, "PNG", (pageWidth - logoW) / 2, pageHeight * 0.28, logoW, logoH, undefined, "FAST");
+      doc.addImage(
+        logo.dataUrl,
+        "PNG",
+        (pageWidth - logoW) / 2,
+        pageHeight * 0.28,
+        logoW,
+        logoH,
+        undefined,
+        "FAST",
+      );
     } catch {
-      // fallback to text wordmark
       doc.setTextColor(255, 255, 255);
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(48);
+      doc.setFontSize(56);
       doc.text("KAVAK", pageWidth / 2, pageHeight * 0.35, { align: "center" });
     }
   } else {
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(48);
+    doc.setFontSize(56);
     doc.text("KAVAK", pageWidth / 2, pageHeight * 0.35, { align: "center" });
   }
 
   // Title
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(28);
-  doc.text("Periodic Service", pageWidth / 2, pageHeight * 0.55, { align: "center" });
-  doc.text("Maintenance Check List", pageWidth / 2, pageHeight * 0.55 + 34, { align: "center" });
+  doc.setFontSize(36);
+  doc.text("Car Service Report", pageWidth / 2, pageHeight * 0.62, { align: "center" });
 
   // Tier
   doc.setFont("helvetica", "normal");
@@ -85,9 +99,23 @@ function drawCoverPage(doc: jsPDF, logoDataUrl: string | null, tierLabel: string
 
   // Footer line
   doc.setFontSize(10);
-  doc.setTextColor(255, 255, 255);
-  doc.text(`Generated: ${generatedAt}`, pageWidth / 2, pageHeight - 50, { align: "center" });
-  doc.text("Quality · Trust · Speed", pageWidth / 2, pageHeight - 32, { align: "center" });
+  doc.setTextColor(200, 200, 200);
+  doc.text(`Generated: ${generatedAt}`, pageWidth / 2, pageHeight - 40, { align: "center" });
+}
+
+async function loadImageWithSize(
+  url: string,
+): Promise<{ dataUrl: string; width: number; height: number }> {
+  const dataUrl = await loadImageDataUrl(url);
+  const { width, height } = await new Promise<{ width: number; height: number }>(
+    (resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+      img.onerror = reject;
+      img.src = dataUrl;
+    },
+  );
+  return { dataUrl, width, height };
 }
 
 export async function generateReportPdf(answers: Answers): Promise<jsPDF> {
@@ -102,13 +130,13 @@ export async function generateReportPdf(answers: Answers): Promise<jsPDF> {
   const generatedAt = now.toLocaleString();
 
   // ===== Cover page =====
-  let logoDataUrl: string | null = null;
+  let logo: { dataUrl: string; width: number; height: number } | null = null;
   try {
-    logoDataUrl = await loadImageDataUrl(logoWhiteOnBlue);
+    logo = await loadImageWithSize(logoWhite);
   } catch {
-    logoDataUrl = null;
+    logo = null;
   }
-  drawCoverPage(doc, logoDataUrl, tierLabel, generatedAt);
+  drawCoverPage(doc, logo, tierLabel, generatedAt);
 
   // ===== Report body on a new page =====
   doc.addPage();
