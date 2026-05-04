@@ -124,11 +124,6 @@ export const steps: Step[] = [
     { kind: "text", id: "customer.contact", label: "Customer contact", placeholder: "e.g. 555-0100", section: SECTIONS.vehicle, page: "p-vehicle-2" },
     { kind: "text", id: "service_advisor.name", label: "Service advisor name", placeholder: "e.g. Jane Smith", section: SECTIONS.vehicle, page: "p-vehicle-2" },
   ]),
-  page("p-vehicle-3", SECTIONS.vehicle, "Service appointment", [
-    { kind: "date", id: "vehicle.service_date", label: "Service date", section: SECTIONS.vehicle, page: "p-vehicle-3" },
-    { kind: "time", id: "vehicle.service_time", label: "Service time", section: SECTIONS.vehicle, page: "p-vehicle-3" },
-    { kind: "select", id: "vehicle.service_plan", label: "Service plan", options: ["Comprehensive Contract", "Basic", "Other"], section: SECTIONS.vehicle, page: "p-vehicle-3" },
-  ]),
 
   // ===== Interior (1 page, 6 items) =====
   page("p-interior", SECTIONS.interior, "Interior", [
