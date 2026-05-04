@@ -48,7 +48,7 @@ async function loadImageDataUrl(url: string): Promise<string> {
 
 function drawCoverPage(
   doc: jsPDF,
-  logo: { dataUrl: string; width: number; height: number } | null,
+  _logo: { dataUrl: string; width: number; height: number } | null,
   car: { dataUrl: string; width: number; height: number } | null,
   tierLabel: string,
   generatedAt: string,
@@ -60,61 +60,38 @@ function drawCoverPage(
   doc.setFillColor(0, 0, 0);
   doc.rect(0, 0, pageWidth, pageHeight, "F");
 
-  // Hero car image fills the lower half (cover-style), preserving aspect.
+  // The cover artwork already contains the KAVAK logo, "Car Service Report"
+  // title, and a hero car. Render it full-bleed, preserving aspect ratio
+  // and centering vertically so nothing is stretched.
   if (car) {
-    const targetW = pageWidth;
     const aspect = car.height / car.width;
-    const carW = targetW;
-    const carH = targetW * aspect;
-    // Anchor bottom of the image to the bottom of the page.
-    const carY = pageHeight - carH;
+    let imgW = pageWidth;
+    let imgH = pageWidth * aspect;
+    if (imgH > pageHeight) {
+      imgH = pageHeight;
+      imgW = pageHeight / aspect;
+    }
+    const imgX = (pageWidth - imgW) / 2;
+    const imgY = (pageHeight - imgH) / 2;
     try {
-      doc.addImage(car.dataUrl, "PNG", 0, carY, carW, carH, undefined, "FAST");
+      doc.addImage(car.dataUrl, "PNG", imgX, imgY, imgW, imgH, undefined, "FAST");
     } catch {
-      // ignore — black background remains
+      // fallback: keep black background only
     }
   }
 
-  // Logo (centered, upper area)
-  if (logo) {
-    const targetW = pageWidth * 0.5;
-    const aspect = logo.height / logo.width;
-    const logoW = targetW;
-    const logoH = targetW * aspect;
-    try {
-      doc.addImage(
-        logo.dataUrl,
-        "PNG",
-        (pageWidth - logoW) / 2,
-        pageHeight * 0.12,
-        logoW,
-        logoH,
-        undefined,
-        "FAST",
-      );
-    } catch {
-      doc.setTextColor(255, 255, 255);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(64);
-      doc.text("KAVAK", pageWidth / 2, pageHeight * 0.2, { align: "center" });
-    }
-  } else {
-    doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(64);
-    doc.text("KAVAK", pageWidth / 2, pageHeight * 0.2, { align: "center" });
-  }
+  // The artwork has a static "Minor Service" subtitle baked in.
+  // Cover that strip with black, then draw the dynamic tier label on top.
+  // Coordinates calibrated to the reference image (subtitle sits ~42% down).
+  const stripY = pageHeight * 0.40;
+  const stripH = pageHeight * 0.045;
+  doc.setFillColor(0, 0, 0);
+  doc.rect(pageWidth * 0.2, stripY, pageWidth * 0.6, stripH, "F");
 
-  // Title — sits just below the logo
   doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(32);
-  doc.text("Car Service Report", pageWidth / 2, pageHeight * 0.34, { align: "center" });
-
-  // Tier subtitle
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(14);
-  doc.text(tierLabel, pageWidth / 2, pageHeight * 0.39, { align: "center" });
+  doc.setFontSize(16);
+  doc.text(tierLabel, pageWidth / 2, stripY + stripH * 0.75, { align: "center" });
 
   // Footer line
   doc.setFontSize(10);
