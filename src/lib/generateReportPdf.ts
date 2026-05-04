@@ -8,10 +8,13 @@ import {
   type ServiceTier,
 } from "./reportSchema";
 import logoWhite from "@/assets/kavak-logo-white.png";
+import coverCar from "@/assets/kavak-cover-car.png";
 
 type Answers = Record<string, any>;
 
-const KAVAK_BLUE: [number, number, number] = [0, 39, 255];
+// Brand color used across PDF section headers and accents.
+// Switched from Kavak blue to black for consistency with the cover page.
+const KAVAK_BLACK: [number, number, number] = [0, 0, 0];
 
 function v(answers: Answers, id: string, fallback = ""): string {
   const val = answers[id];
@@ -46,6 +49,7 @@ async function loadImageDataUrl(url: string): Promise<string> {
 function drawCoverPage(
   doc: jsPDF,
   logo: { dataUrl: string; width: number; height: number } | null,
+  car: { dataUrl: string; width: number; height: number } | null,
   tierLabel: string,
   generatedAt: string,
 ) {
@@ -56,9 +60,24 @@ function drawCoverPage(
   doc.setFillColor(0, 0, 0);
   doc.rect(0, 0, pageWidth, pageHeight, "F");
 
-  // Logo (centered upper area), preserve aspect ratio so it doesn't appear shrunk
+  // Hero car image fills the lower half (cover-style), preserving aspect.
+  if (car) {
+    const targetW = pageWidth;
+    const aspect = car.height / car.width;
+    const carW = targetW;
+    const carH = targetW * aspect;
+    // Anchor bottom of the image to the bottom of the page.
+    const carY = pageHeight - carH;
+    try {
+      doc.addImage(car.dataUrl, "PNG", 0, carY, carW, carH, undefined, "FAST");
+    } catch {
+      // ignore — black background remains
+    }
+  }
+
+  // Logo (centered, upper area)
   if (logo) {
-    const targetW = pageWidth * 0.45; // ~45% of page width
+    const targetW = pageWidth * 0.5;
     const aspect = logo.height / logo.width;
     const logoW = targetW;
     const logoH = targetW * aspect;
@@ -67,7 +86,7 @@ function drawCoverPage(
         logo.dataUrl,
         "PNG",
         (pageWidth - logoW) / 2,
-        pageHeight * 0.28,
+        pageHeight * 0.12,
         logoW,
         logoH,
         undefined,
@@ -76,26 +95,26 @@ function drawCoverPage(
     } catch {
       doc.setTextColor(255, 255, 255);
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(56);
-      doc.text("KAVAK", pageWidth / 2, pageHeight * 0.35, { align: "center" });
+      doc.setFontSize(64);
+      doc.text("KAVAK", pageWidth / 2, pageHeight * 0.2, { align: "center" });
     }
   } else {
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(56);
-    doc.text("KAVAK", pageWidth / 2, pageHeight * 0.35, { align: "center" });
+    doc.setFontSize(64);
+    doc.text("KAVAK", pageWidth / 2, pageHeight * 0.2, { align: "center" });
   }
 
-  // Title
+  // Title — sits just below the logo
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(36);
-  doc.text("Car Service Report", pageWidth / 2, pageHeight * 0.62, { align: "center" });
+  doc.setFontSize(32);
+  doc.text("Car Service Report", pageWidth / 2, pageHeight * 0.34, { align: "center" });
 
-  // Tier
+  // Tier subtitle
   doc.setFont("helvetica", "normal");
   doc.setFontSize(14);
-  doc.text(tierLabel, pageWidth / 2, pageHeight * 0.7, { align: "center" });
+  doc.text(tierLabel, pageWidth / 2, pageHeight * 0.39, { align: "center" });
 
   // Footer line
   doc.setFontSize(10);
@@ -131,18 +150,24 @@ export async function generateReportPdf(answers: Answers): Promise<jsPDF> {
 
   // ===== Cover page =====
   let logo: { dataUrl: string; width: number; height: number } | null = null;
+  let car: { dataUrl: string; width: number; height: number } | null = null;
   try {
     logo = await loadImageWithSize(logoWhite);
   } catch {
     logo = null;
   }
-  drawCoverPage(doc, logo, tierLabel, generatedAt);
+  try {
+    car = await loadImageWithSize(coverCar);
+  } catch {
+    car = null;
+  }
+  drawCoverPage(doc, logo, car, tierLabel, generatedAt);
 
   // ===== Report body on a new page =====
   doc.addPage();
 
   // Header band on body page
-  doc.setFillColor(...KAVAK_BLUE);
+  doc.setFillColor(...KAVAK_BLACK);
   doc.rect(0, 0, pageWidth, 70, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
