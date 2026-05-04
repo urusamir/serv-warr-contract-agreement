@@ -17,7 +17,7 @@ const Landing = () => {
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight max-w-4xl leading-[0.95]"
         >
-          Service Completion Report
+          Kavak Aftersales Service Report
         </motion.h1>
 
         <motion.div
