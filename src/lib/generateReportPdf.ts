@@ -81,16 +81,17 @@ function drawCoverPage(
   }
 
   // The artwork has a static "Minor Service" subtitle baked in just below
-  // "Car Service Report". Cover it with black, then draw the dynamic tier label.
-  const stripY = pageHeight * 0.40;
-  const stripH = pageHeight * 0.07;
+  // "Car Service Report" (roughly 34%-37% of the page height). Cover that
+  // exact band with black, then draw the dynamic tier label centered on it.
+  const stripY = pageHeight * 0.335;
+  const stripH = pageHeight * 0.045;
   doc.setFillColor(0, 0, 0);
   doc.rect(0, stripY, pageWidth, stripH, "F");
 
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(18);
-  doc.text(tierLabel, pageWidth / 2, stripY + stripH * 0.7, { align: "center" });
+  doc.setFontSize(16);
+  doc.text(tierLabel, pageWidth / 2, stripY + stripH * 0.72, { align: "center" });
 
   // Cover the baked-in footer text ("Generated: ..." + "Kavak Service Report • Page 1 of 4")
   // at the bottom of the artwork with a tall black band, then draw only the
