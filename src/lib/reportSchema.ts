@@ -124,11 +124,6 @@ export const steps: Step[] = [
     { kind: "text", id: "customer.contact", label: "Customer contact", placeholder: "e.g. 555-0100", section: SECTIONS.vehicle, page: "p-vehicle-2" },
     { kind: "text", id: "service_advisor.name", label: "Service advisor name", placeholder: "e.g. Jane Smith", section: SECTIONS.vehicle, page: "p-vehicle-2" },
   ]),
-  page("p-vehicle-3", SECTIONS.vehicle, "Service appointment", [
-    { kind: "date", id: "vehicle.service_date", label: "Service date", section: SECTIONS.vehicle, page: "p-vehicle-3" },
-    { kind: "time", id: "vehicle.service_time", label: "Service time", section: SECTIONS.vehicle, page: "p-vehicle-3" },
-    { kind: "select", id: "vehicle.service_plan", label: "Service plan", options: ["Comprehensive Contract", "Basic", "Other"], section: SECTIONS.vehicle, page: "p-vehicle-3" },
-  ]),
 
   // ===== Interior (1 page, 6 items) =====
   page("p-interior", SECTIONS.interior, "Interior", [
@@ -151,7 +146,7 @@ export const steps: Step[] = [
   ]),
 
   // ===== Under Chassis (3 pages, 18 items) =====
-  page("p-chassis-1", SECTIONS.chassis, "Under Chassis — Fluids", [
+  page("p-chassis-1", SECTIONS.chassis, "Under Chassis", [
     checklist("chassis.engine_oil_filter", "Engine Oil and Oil Filter", SECTIONS.chassis, "p-chassis-1", tier("R", "R", "R")),
     checklist("chassis.mtm_atm_oil", "MTM/ATM Oil", SECTIONS.chassis, "p-chassis-1", tier("I", "I", "I")),
     checklist("chassis.atm_oil_ws", "ATM Oil (WS)", SECTIONS.chassis, "p-chassis-1", tier("I", "I", "I")),
@@ -160,7 +155,7 @@ export const steps: Step[] = [
     checklist("chassis.differential_oil", "Differential Oil", SECTIONS.chassis, "p-chassis-1", tier("I", "I", "I")),
     checklist("chassis.coolant", "Coolant", SECTIONS.chassis, "p-chassis-1", tier("I", "I", "I")),
   ]),
-  page("p-chassis-2", SECTIONS.chassis, "Under Chassis — Lines & Steering", [
+  page("p-chassis-2", SECTIONS.chassis, "Under Chassis", [
     checklist("chassis.brake_pipes_hoses", "Brake Pipes & Hoses", SECTIONS.chassis, "p-chassis-2", tier("I", "I", "I")),
     checklist("chassis.fuel_lines_connections", "Fuel Lines & Connections", SECTIONS.chassis, "p-chassis-2", tier("I", "I", "I")),
     checklist("chassis.steering_wear_leaks", "Steering Wear and Leaks", SECTIONS.chassis, "p-chassis-2", tier("I", "I", "I")),
@@ -168,7 +163,7 @@ export const steps: Step[] = [
     checklist("chassis.drive_shaft_boots", "Drive Shaft Boots", SECTIONS.chassis, "p-chassis-2", tier("I", "I", "I")),
     checklist("chassis.ball_joints_dust_cover", "Ball Joints and Dust Cover", SECTIONS.chassis, "p-chassis-2", tier("I", "I", "I")),
   ]),
-  page("p-chassis-3", SECTIONS.chassis, "Under Chassis — Suspension & Mounts", [
+  page("p-chassis-3", SECTIONS.chassis, "Under Chassis", [
     checklist("chassis.shock_absorbers", "Front and Rear Shock Absorber", SECTIONS.chassis, "p-chassis-3", tier("I", "I", "I")),
     checklist("chassis.suspension_bush", "Front and Rear Suspension Bush", SECTIONS.chassis, "p-chassis-3", tier("I", "I", "I")),
     checklist("chassis.wheel_bearings", "Wheel Bearings", SECTIONS.chassis, "p-chassis-3", tier("I", "I", "I")),
@@ -213,7 +208,7 @@ export const steps: Step[] = [
   ]),
 
   // ===== Engine Room (2 pages, 11 items) =====
-  page("p-engine-1", SECTIONS.engine, "Engine Room — Filters & Ignition", [
+  page("p-engine-1", SECTIONS.engine, "Engine Room", [
     checklist("engine.air_filter", "Air Filter", SECTIONS.engine, "p-engine-1", tier("C", "C", "R")),
     checklist("engine.fuel_filter", "Fuel Filter", SECTIONS.engine, "p-engine-1", tier("I", "I", "I")),
     checklist("engine.spark_plugs_normal", "Spark Plugs (Normal)", SECTIONS.engine, "p-engine-1", tier("I", "I", "I")),
@@ -221,7 +216,7 @@ export const steps: Step[] = [
     checklist("engine.battery_electrolyte_connections", "Battery Electrolyte and Connections", SECTIONS.engine, "p-engine-1", tier("C/L", "C/L", "C/L")),
     checklist("engine.battery_report", "Battery Report", SECTIONS.engine, "p-engine-1", tier("I", "I", "I")),
   ]),
-  page("p-engine-2", SECTIONS.engine, "Engine Room — Fluids & Belts", [
+  page("p-engine-2", SECTIONS.engine, "Engine Room", [
     checklist("engine.brake_fluid", "Brake Fluid", SECTIONS.engine, "p-engine-2", tier("I", "I", "R")),
     checklist("engine.windshield_fluid", "Windshield Fluid", SECTIONS.engine, "p-engine-2", tier("I", "I", "I")),
     checklist("engine.power_steering_fluid", "Power Steering Fluid", SECTIONS.engine, "p-engine-2", tier("I", "I", "I")),

@@ -64,7 +64,7 @@ const Report = () => {
       });
 
       try {
-        downloadReportPdf(answers);
+        await downloadReportPdf(answers);
       } catch (pdfErr) {
         console.error("PDF generation failed", pdfErr);
         toast.error("Report submitted, but PDF generation failed.");
