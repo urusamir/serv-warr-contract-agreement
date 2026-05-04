@@ -252,8 +252,8 @@ export async function generateReportPdf(answers: Answers): Promise<jsPDF> {
   return doc;
 }
 
-export function downloadReportPdf(answers: Answers) {
-  const doc = generateReportPdf(answers);
+export async function downloadReportPdf(answers: Answers) {
+  const doc = await generateReportPdf(answers);
   const reg = (answers["vehicle.registration_number"] as string) || "report";
   const date = new Date().toISOString().slice(0, 10);
   doc.save(`kavak-service-report-${reg.replace(/[^A-Za-z0-9]+/g, "-")}-${date}.pdf`);
