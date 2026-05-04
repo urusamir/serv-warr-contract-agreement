@@ -7,6 +7,7 @@ import {
   getActionsForTier,
   type ServiceTier,
 } from "./reportSchema";
+import logoWhiteOnBlue from "@/assets/kavak-logo-white-on-blue.png";
 
 type Answers = Record<string, any>;
 
@@ -30,14 +31,89 @@ function v(answers: Answers, id: string, fallback = ""): string {
   return String(val);
 }
 
-export function generateReportPdf(answers: Answers): jsPDF {
+// Load an image asset URL into a data URL so jsPDF can embed it.
+async function loadImageDataUrl(url: string): Promise<string> {
+  const res = await fetch(url);
+  const blob = await res.blob();
+  return await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+function drawCoverPage(doc: jsPDF, logoDataUrl: string | null, tierLabel: string, generatedAt: string) {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  // Full-bleed Kavak blue cover
+  doc.setFillColor(...KAVAK_BLUE);
+  doc.rect(0, 0, pageWidth, pageHeight, "F");
+
+  // Logo (centered upper third)
+  if (logoDataUrl) {
+    const logoW = 220;
+    const logoH = 80;
+    try {
+      doc.addImage(logoDataUrl, "PNG", (pageWidth - logoW) / 2, pageHeight * 0.28, logoW, logoH, undefined, "FAST");
+    } catch {
+      // fallback to text wordmark
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(48);
+      doc.text("KAVAK", pageWidth / 2, pageHeight * 0.35, { align: "center" });
+    }
+  } else {
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(48);
+    doc.text("KAVAK", pageWidth / 2, pageHeight * 0.35, { align: "center" });
+  }
+
+  // Title
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(28);
+  doc.text("Periodic Service", pageWidth / 2, pageHeight * 0.55, { align: "center" });
+  doc.text("Maintenance Check List", pageWidth / 2, pageHeight * 0.55 + 34, { align: "center" });
+
+  // Tier
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(14);
+  doc.text(tierLabel, pageWidth / 2, pageHeight * 0.7, { align: "center" });
+
+  // Footer line
+  doc.setFontSize(10);
+  doc.setTextColor(255, 255, 255);
+  doc.text(`Generated: ${generatedAt}`, pageWidth / 2, pageHeight - 50, { align: "center" });
+  doc.text("Quality · Trust · Speed", pageWidth / 2, pageHeight - 32, { align: "center" });
+}
+
+export async function generateReportPdf(answers: Answers): Promise<jsPDF> {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 40;
   const tier: ServiceTier | undefined = answers["service.type"];
   const tierLabel = tier ? SERVICE_TIER_LABEL[tier] : "—";
 
-  // Header band
+  // Auto-fill date/time from current moment
+  const now = new Date();
+  const generatedAt = now.toLocaleString();
+
+  // ===== Cover page =====
+  let logoDataUrl: string | null = null;
+  try {
+    logoDataUrl = await loadImageDataUrl(logoWhiteOnBlue);
+  } catch {
+    logoDataUrl = null;
+  }
+  drawCoverPage(doc, logoDataUrl, tierLabel, generatedAt);
+
+  // ===== Report body on a new page =====
+  doc.addPage();
+
+  // Header band on body page
   doc.setFillColor(...KAVAK_BLUE);
   doc.rect(0, 0, pageWidth, 70, "F");
   doc.setTextColor(255, 255, 255);
@@ -49,15 +125,14 @@ export function generateReportPdf(answers: Answers): jsPDF {
   doc.text("Periodic Service Maintenance Check List", margin, 50);
 
   doc.setFontSize(9);
-  const submittedAt = new Date().toLocaleString();
-  doc.text(`Generated: ${submittedAt}`, pageWidth - margin, 30, { align: "right" });
+  doc.text(`Generated: ${generatedAt}`, pageWidth - margin, 30, { align: "right" });
   doc.setFont("helvetica", "bold");
   doc.text(`Service Type: ${tierLabel}`, pageWidth - margin, 50, { align: "right" });
 
   doc.setTextColor(0, 0, 0);
   let cursorY = 90;
 
-  // Vehicle & Customer summary
+  // Vehicle & Customer summary (auto-filled date/time, no service plan)
   const vehicleRows: [string, string][] = [
     ["Vehicle make & model", v(answers, "vehicle.make_model")],
     ["Registration number", v(answers, "vehicle.registration_number")],
@@ -66,8 +141,8 @@ export function generateReportPdf(answers: Answers): jsPDF {
     ["Customer name", v(answers, "customer.name")],
     ["Customer contact", v(answers, "customer.contact")],
     ["Service advisor", v(answers, "service_advisor.name")],
-    ["Service date / time", `${v(answers, "vehicle.service_date")} ${v(answers, "vehicle.service_time")}`.trim()],
-    ["Service plan", v(answers, "vehicle.service_plan")],
+    ["Service date", now.toLocaleDateString()],
+    ["Service time", now.toLocaleTimeString()],
   ];
 
   autoTable(doc, {
