@@ -161,21 +161,28 @@ export async function generateReportPdf(answers: Answers): Promise<jsPDF> {
   // ===== Report body on a new page =====
   doc.addPage();
 
-  // Header band on body page
+  // Header band on body page — KAVAK + Car Service Report centered on the same row
   doc.setFillColor(...KAVAK_BLACK);
   doc.rect(0, 0, pageWidth, 70, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(22);
-  doc.text("KAVAK", margin, 30);
+  const kavakText = "KAVAK";
+  const separator = "  |  ";
+  const titleText = "Car Service Report";
+  const kavakWidth = doc.getTextWidth(kavakText);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(12);
-  doc.text("Car Service Report", margin, 50);
-
-  doc.setFontSize(9);
-  doc.text(`Generated: ${generatedAt}`, pageWidth - margin, 30, { align: "right" });
+  doc.setFontSize(14);
+  const sepWidth = doc.getTextWidth(separator);
+  const titleWidth = doc.getTextWidth(titleText);
+  const totalWidth = kavakWidth + sepWidth + titleWidth;
+  const startX = (pageWidth - totalWidth) / 2;
   doc.setFont("helvetica", "bold");
-  doc.text(`Service Type: ${tierLabel}`, pageWidth - margin, 50, { align: "right" });
+  doc.setFontSize(22);
+  doc.text(kavakText, startX, 42);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(14);
+  doc.text(separator + titleText, startX + kavakWidth, 42);
 
   doc.setTextColor(0, 0, 0);
   let cursorY = 90;
