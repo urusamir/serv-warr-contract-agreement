@@ -81,17 +81,16 @@ function drawCoverPage(
   }
 
   // The artwork has a static "Minor Service" subtitle baked in.
-  // Cover that strip with black, then draw the dynamic tier label on top.
-  // Coordinates calibrated to the reference image (subtitle sits ~42% down).
-  const stripY = pageHeight * 0.40;
-  const stripH = pageHeight * 0.045;
+  // Cover that strip generously with black, then draw the dynamic tier label.
+  const stripY = pageHeight * 0.36;
+  const stripH = pageHeight * 0.08;
   doc.setFillColor(0, 0, 0);
-  doc.rect(pageWidth * 0.2, stripY, pageWidth * 0.6, stripH, "F");
+  doc.rect(0, stripY, pageWidth, stripH, "F");
 
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(16);
-  doc.text(tierLabel, pageWidth / 2, stripY + stripH * 0.75, { align: "center" });
+  doc.setFontSize(18);
+  doc.text(tierLabel, pageWidth / 2, stripY + stripH * 0.65, { align: "center" });
 
   // Footer line
   doc.setFontSize(10);
