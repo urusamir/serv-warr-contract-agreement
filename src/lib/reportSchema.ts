@@ -123,7 +123,6 @@ export const steps: Step[] = [
     { kind: "text", id: "customer.name", label: "Customer name", placeholder: "e.g. John Doe", section: SECTIONS.vehicle, page: "p-vehicle-2" },
     { kind: "text", id: "customer.contact", label: "Customer contact", placeholder: "e.g. 555-0100", section: SECTIONS.vehicle, page: "p-vehicle-2" },
     { kind: "text", id: "service_advisor.name", label: "Service advisor name", placeholder: "e.g. Jane Smith", section: SECTIONS.vehicle, page: "p-vehicle-2" },
-    { kind: "text", id: "service_advisor.number", label: "Service advisor number", placeholder: "e.g. 555-0200", section: SECTIONS.vehicle, page: "p-vehicle-2" },
   ]),
   page("p-vehicle-3", SECTIONS.vehicle, "Service appointment", [
     { kind: "date", id: "vehicle.service_date", label: "Service date", section: SECTIONS.vehicle, page: "p-vehicle-3" },
