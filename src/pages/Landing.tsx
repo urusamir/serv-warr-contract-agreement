@@ -31,9 +31,6 @@ const Landing = () => {
         </motion.div>
       </section>
 
-      <footer className="p-6 md:p-10 text-sm text-primary-foreground/60 text-center">
-        Quality · Trust · Speed
-      </footer>
     </main>
   );
 };
