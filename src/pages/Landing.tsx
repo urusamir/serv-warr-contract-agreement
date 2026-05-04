@@ -19,14 +19,6 @@ const Landing = () => {
         >
           Service Completion Report
         </motion.h1>
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-6 text-lg md:text-2xl text-primary-foreground/80 max-w-2xl"
-        >
-          Capture every check, every measurement, every note.
-        </motion.p>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
