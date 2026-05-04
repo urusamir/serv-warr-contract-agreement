@@ -8,10 +8,13 @@ import {
   type ServiceTier,
 } from "./reportSchema";
 import logoWhite from "@/assets/kavak-logo-white.png";
+import coverCar from "@/assets/kavak-cover-car.png";
 
 type Answers = Record<string, any>;
 
-const KAVAK_BLUE: [number, number, number] = [0, 39, 255];
+// Brand color used across PDF section headers and accents.
+// Switched from Kavak blue to black for consistency with the cover page.
+const KAVAK_BLACK: [number, number, number] = [0, 0, 0];
 
 function v(answers: Answers, id: string, fallback = ""): string {
   const val = answers[id];
@@ -45,7 +48,8 @@ async function loadImageDataUrl(url: string): Promise<string> {
 
 function drawCoverPage(
   doc: jsPDF,
-  logo: { dataUrl: string; width: number; height: number } | null,
+  _logo: { dataUrl: string; width: number; height: number } | null,
+  car: { dataUrl: string; width: number; height: number } | null,
   tierLabel: string,
   generatedAt: string,
 ) {
@@ -56,46 +60,38 @@ function drawCoverPage(
   doc.setFillColor(0, 0, 0);
   doc.rect(0, 0, pageWidth, pageHeight, "F");
 
-  // Logo (centered upper area), preserve aspect ratio so it doesn't appear shrunk
-  if (logo) {
-    const targetW = pageWidth * 0.45; // ~45% of page width
-    const aspect = logo.height / logo.width;
-    const logoW = targetW;
-    const logoH = targetW * aspect;
-    try {
-      doc.addImage(
-        logo.dataUrl,
-        "PNG",
-        (pageWidth - logoW) / 2,
-        pageHeight * 0.28,
-        logoW,
-        logoH,
-        undefined,
-        "FAST",
-      );
-    } catch {
-      doc.setTextColor(255, 255, 255);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(56);
-      doc.text("KAVAK", pageWidth / 2, pageHeight * 0.35, { align: "center" });
+  // The cover artwork already contains the KAVAK logo, "Car Service Report"
+  // title, and a hero car. Render it full-bleed, preserving aspect ratio
+  // and centering vertically so nothing is stretched.
+  if (car) {
+    const aspect = car.height / car.width;
+    let imgW = pageWidth;
+    let imgH = pageWidth * aspect;
+    if (imgH > pageHeight) {
+      imgH = pageHeight;
+      imgW = pageHeight / aspect;
     }
-  } else {
-    doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(56);
-    doc.text("KAVAK", pageWidth / 2, pageHeight * 0.35, { align: "center" });
+    const imgX = (pageWidth - imgW) / 2;
+    const imgY = (pageHeight - imgH) / 2;
+    try {
+      doc.addImage(car.dataUrl, "PNG", imgX, imgY, imgW, imgH, undefined, "FAST");
+    } catch {
+      // fallback: keep black background only
+    }
   }
 
-  // Title
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(36);
-  doc.text("Car Service Report", pageWidth / 2, pageHeight * 0.62, { align: "center" });
+  // The artwork has a static "Minor Service" subtitle baked in.
+  // Cover that strip with black, then draw the dynamic tier label on top.
+  // Coordinates calibrated to the reference image (subtitle sits ~42% down).
+  const stripY = pageHeight * 0.40;
+  const stripH = pageHeight * 0.045;
+  doc.setFillColor(0, 0, 0);
+  doc.rect(pageWidth * 0.2, stripY, pageWidth * 0.6, stripH, "F");
 
-  // Tier
+  doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(14);
-  doc.text(tierLabel, pageWidth / 2, pageHeight * 0.7, { align: "center" });
+  doc.setFontSize(16);
+  doc.text(tierLabel, pageWidth / 2, stripY + stripH * 0.75, { align: "center" });
 
   // Footer line
   doc.setFontSize(10);
@@ -131,18 +127,24 @@ export async function generateReportPdf(answers: Answers): Promise<jsPDF> {
 
   // ===== Cover page =====
   let logo: { dataUrl: string; width: number; height: number } | null = null;
+  let car: { dataUrl: string; width: number; height: number } | null = null;
   try {
     logo = await loadImageWithSize(logoWhite);
   } catch {
     logo = null;
   }
-  drawCoverPage(doc, logo, tierLabel, generatedAt);
+  try {
+    car = await loadImageWithSize(coverCar);
+  } catch {
+    car = null;
+  }
+  drawCoverPage(doc, logo, car, tierLabel, generatedAt);
 
   // ===== Report body on a new page =====
   doc.addPage();
 
   // Header band on body page
-  doc.setFillColor(...KAVAK_BLUE);
+  doc.setFillColor(...KAVAK_BLACK);
   doc.rect(0, 0, pageWidth, 70, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
@@ -150,7 +152,7 @@ export async function generateReportPdf(answers: Answers): Promise<jsPDF> {
   doc.text("KAVAK", margin, 30);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(12);
-  doc.text("Periodic Service Maintenance Check List", margin, 50);
+  doc.text("Car Service Report", margin, 50);
 
   doc.setFontSize(9);
   doc.text(`Generated: ${generatedAt}`, pageWidth - margin, 30, { align: "right" });
@@ -180,7 +182,7 @@ export async function generateReportPdf(answers: Answers): Promise<jsPDF> {
         {
           content: SECTIONS.vehicle,
           colSpan: 2,
-          styles: { fillColor: KAVAK_BLUE, textColor: 255, halign: "left" },
+          styles: { fillColor: KAVAK_BLACK, textColor: 255, halign: "left" },
         },
       ],
     ],
@@ -233,7 +235,7 @@ export async function generateReportPdf(answers: Answers): Promise<jsPDF> {
           {
             content: sectionLabel,
             colSpan: 3,
-            styles: { fillColor: KAVAK_BLUE, textColor: 255, halign: "left" },
+            styles: { fillColor: KAVAK_BLACK, textColor: 255, halign: "left" },
           },
         ],
         [
