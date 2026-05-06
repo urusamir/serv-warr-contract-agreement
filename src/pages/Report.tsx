@@ -79,19 +79,24 @@ const Report = () => {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [index]);
 
-  // Block forward navigation past service-type until a tier is chosen
+  // Block forward navigation past service-type until a tier is chosen,
+  // and past vehicle details until VIN is filled.
   const canAdvance = useCallback(() => {
     if (step.kind === "service-type") return !!tier;
+    if (step.kind === "page" && step.id === "p-vehicle-1") {
+      return !!(answers["vehicle.vin"] as string)?.trim();
+    }
     return true;
-  }, [step, tier]);
+  }, [step, tier, answers]);
 
   const tryGoNext = useCallback(() => {
     if (!canAdvance()) {
-      toast.error("Please select a service type to continue.");
+      if (step.kind === "service-type") toast.error("Please select a service type to continue.");
+      else toast.error("VIN is required. Please enter the vehicle VIN to continue.");
       return;
     }
     goNext();
-  }, [canAdvance, goNext]);
+  }, [canAdvance, goNext, step]);
 
   // Keyboard shortcuts
   useEffect(() => {

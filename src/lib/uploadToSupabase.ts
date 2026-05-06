@@ -5,10 +5,12 @@ import { buildReportFilename } from "./generateReportPdf";
 type Answers = Record<string, any>;
 
 function buildStoragePath(answers: Answers, filename: string): string {
-  const reg = (answers["vehicle.registration_number"] as string) || "unknown";
-  const safeReg = reg.replace(/[^A-Za-z0-9]+/g, "-");
-  const date = new Date().toISOString().slice(0, 10);
-  return `${safeReg}/${date}/${filename}`;
+  const vin = (answers["vehicle.vin"] as string) || "unknown";
+  const safeVin = vin.replace(/[^A-Za-z0-9]+/g, "-");
+  const now = new Date();
+  const date = now.toISOString().slice(0, 10);
+  const time = now.toISOString().slice(11, 19).replace(/:/g, "-");
+  return `${safeVin}/${date}/${time}-${filename}`;
 }
 
 export async function uploadToSupabase(
