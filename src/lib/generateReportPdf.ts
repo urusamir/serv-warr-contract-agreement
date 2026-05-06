@@ -223,38 +223,49 @@ export async function generateReportPdf(answers: Answers): Promise<jsPDF> {
     const sectionFields = fields.filter((f) => f.section === sectionLabel);
     if (sectionFields.length === 0) return;
 
-    const body = sectionFields.map((f) => {
+    type RowMeta =
+      | { kind: "checklist"; tierActions: string[]; performed: string[] }
+      | { kind: "notApplicable" }
+      | { kind: "multinumber" }
+      | { kind: "other" };
+
+    const body: [string, string, string][] = [];
+    const rowMeta: RowMeta[] = [];
+
+    for (const f of sectionFields) {
       const ans = answers[f.id];
-      const label = f.label;
-      let action = "";
-      let observations = "";
 
       if (f.kind === "checklist") {
         const tierActions = getActionsForTier(f, tier);
         if (tierActions.length === 0) {
-          action = "Not applicable";
+          body.push([f.label, "", ""]);
+          rowMeta.push({ kind: "notApplicable" });
         } else {
           const performed: string[] = ans?.actions ?? [];
-          action = tierActions
-            .map((a) => `${performed.includes(a) ? "[x]" : "[ ]"} ${a}`)
-            .join("\n");
+          body.push([f.label, "", ans?.notes ?? ""]);
+          rowMeta.push({ kind: "checklist", tierActions, performed });
         }
-        observations = ans?.notes ?? "";
-      } else if (f.kind === "multinumber") {
-        action = "Measure";
-        observations = f.fields
+        continue;
+      }
+
+      if (f.kind === "multinumber") {
+        const parts = (f.fields as { id: string; label: string }[])
           .map((mf) => {
             const val = ans?.[mf.id];
             return val !== undefined && val !== "" ? `${mf.label}: ${val}${f.unit ?? ""}` : null;
           })
-          .filter(Boolean)
-          .join("  ·  ");
+          .filter(Boolean) as string[];
+        body.push([f.label, "Measure", parts.join("  ·  ")]);
+        rowMeta.push({ kind: "multinumber" });
+        continue;
       }
-      return [label, action, observations];
-    });
+
+      rowMeta.push({ kind: "other" });
+    }
 
     autoTable(doc, {
       startY: cursorY,
+      rowPageBreak: "avoid",
       head: [
         [
           {
@@ -276,6 +287,58 @@ export async function generateReportPdf(answers: Answers): Promise<jsPDF> {
         0: { cellWidth: 200, fontStyle: "bold" },
         1: { cellWidth: 130 },
         2: { cellWidth: "auto" },
+      },
+      didParseCell: (data: any) => {
+        if (data.section !== "body") return;
+        const meta = rowMeta[data.row.index];
+
+        // Column 1: set min height based on selected action count and clear default text
+        if (data.column.index === 1 && meta?.kind === "checklist") {
+          const selectedCount = meta.tierActions.filter((a) =>
+            meta.performed.includes(a),
+          ).length;
+          if (selectedCount > 0) {
+            data.cell.styles.minCellHeight = selectedCount * 26 + 10;
+          }
+          data.cell.text = [""];
+        }
+      },
+      didDrawCell: (data: any) => {
+        if (data.section !== "body") return;
+        const meta = rowMeta[data.row.index];
+
+        // Column 1: render selected actions as compact pill buttons; skip unselected
+        if (data.column.index === 1 && meta?.kind === "checklist") {
+          const selectedActions = meta.tierActions.filter((a) =>
+            meta.performed.includes(a),
+          );
+          const lineBase = data.cell.y + 6;
+          const lineH = 26;
+
+          selectedActions.forEach((action, i) => {
+            const btnY = lineBase + i * lineH;
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(8);
+            const tw = doc.getTextWidth(action);
+            const btnW = tw + 16;
+            const btnH = 18;
+            doc.setFillColor(224, 231, 255);
+            doc.roundedRect(data.cell.x + 5, btnY, btnW, btnH, 4, 4, "F");
+            doc.setTextColor(67, 56, 202);
+            doc.text(action, data.cell.x + 13, btnY + 12);
+            doc.setFont("helvetica", "normal");
+          });
+          doc.setTextColor(0, 0, 0);
+        }
+
+        if (data.column.index === 1 && meta?.kind === "notApplicable") {
+          doc.setTextColor(150, 150, 150);
+          doc.setFont("helvetica", "italic");
+          doc.setFontSize(9);
+          doc.text("Not applicable", data.cell.x + 5, data.cell.y + data.cell.height / 2 + 3);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(0, 0, 0);
+        }
       },
       margin: { left: margin, right: margin },
     });
@@ -307,9 +370,17 @@ export async function generateReportPdf(answers: Answers): Promise<jsPDF> {
   return doc;
 }
 
-export async function downloadReportPdf(answers: Answers) {
-  const doc = await generateReportPdf(answers);
+export function buildReportFilename(answers: Answers): string {
   const reg = (answers["vehicle.registration_number"] as string) || "report";
   const date = new Date().toISOString().slice(0, 10);
-  doc.save(`kavak-service-report-${reg.replace(/[^A-Za-z0-9]+/g, "-")}-${date}.pdf`);
+  return `kavak-service-report-${reg.replace(/[^A-Za-z0-9]+/g, "-")}-${date}.pdf`;
+}
+
+export function saveGeneratedPdf(doc: jsPDF, answers: Answers) {
+  doc.save(buildReportFilename(answers));
+}
+
+export async function downloadReportPdf(answers: Answers) {
+  const doc = await generateReportPdf(answers);
+  doc.save(buildReportFilename(answers));
 }

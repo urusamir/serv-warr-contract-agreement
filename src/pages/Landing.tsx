@@ -1,10 +1,12 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import NavBar from "@/components/NavBar";
 
 const Landing = () => {
   return (
     <main className="min-h-screen w-full bg-primary text-primary-foreground flex flex-col">
+      <NavBar />
       <section className="flex-1 flex flex-col items-center justify-center px-6 text-center">
         <motion.h1
           initial={{ opacity: 0, y: 20 }}

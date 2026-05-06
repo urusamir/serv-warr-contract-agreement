@@ -13,11 +13,10 @@ import {
   getActionsForTier,
 } from "@/lib/reportSchema";
 import { buildPayload } from "@/lib/buildPayload";
-import { downloadReportPdf } from "@/lib/generateReportPdf";
+import { generateReportPdf, saveGeneratedPdf } from "@/lib/generateReportPdf";
+import { uploadToSupabase } from "@/lib/uploadToSupabase";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-
-const WEBHOOK_URL = "https://samirdoesai.app.n8n.cloud/webhook/service-report";
 
 type Answers = Record<string, any>;
 
@@ -56,20 +55,16 @@ const Report = () => {
     setSubmitting(true);
     const payload = buildPayload(answers);
     try {
-      await fetch(WEBHOOK_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        mode: "no-cors",
-        body: JSON.stringify(payload),
-      });
+      const doc = await generateReportPdf(answers);
 
       try {
-        await downloadReportPdf(answers);
-      } catch (pdfErr) {
-        console.error("PDF generation failed", pdfErr);
-        toast.error("Report submitted, but PDF generation failed.");
+        await uploadToSupabase(doc, answers, payload);
+      } catch (supabaseErr) {
+        console.error("Supabase upload failed", supabaseErr);
+        toast.error("Report saved locally, but cloud backup failed.");
       }
 
+      saveGeneratedPdf(doc, answers);
       toast.success("Report submitted");
       navigate("/report/done");
     } catch (e) {
@@ -79,6 +74,10 @@ const Report = () => {
       setSubmitting(false);
     }
   }, [answers, navigate]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [index]);
 
   // Block forward navigation past service-type until a tier is chosen
   const canAdvance = useCallback(() => {

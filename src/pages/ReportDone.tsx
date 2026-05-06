@@ -1,10 +1,12 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { CheckCircle2 } from "lucide-react";
+import NavBar from "@/components/NavBar";
 
 const ReportDone = () => {
   return (
     <main className="min-h-screen w-full bg-black text-white flex flex-col">
+      <NavBar />
       <section className="flex-1 flex flex-col items-center justify-center px-6 text-center">
         <motion.div
           initial={{ scale: 0.5, opacity: 0 }}
