@@ -40,6 +40,7 @@ export async function uploadToSupabase(
     service_mileage: answers["vehicle.service_type_mileage"] ?? null,
     customer_name: answers["customer.name"] ?? null,
     customer_contact: answers["customer.contact"] ?? null,
+    customer_email: answers["customer.email"] ?? null,
     service_advisor: answers["service_advisor.name"] ?? null,
     payload,
     pdf_storage_path: storagePath,

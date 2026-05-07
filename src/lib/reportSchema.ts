@@ -122,6 +122,7 @@ export const steps: Step[] = [
   page("p-vehicle-2", SECTIONS.vehicle, "Customer & advisor", [
     { kind: "text", id: "customer.name", label: "Customer name", placeholder: "e.g. John Doe", section: SECTIONS.vehicle, page: "p-vehicle-2" },
     { kind: "text", id: "customer.contact", label: "Customer contact", placeholder: "e.g. 555-0100", section: SECTIONS.vehicle, page: "p-vehicle-2" },
+    { kind: "text", id: "customer.email", label: "Customer email", placeholder: "e.g. john@example.com", section: SECTIONS.vehicle, page: "p-vehicle-2" },
     { kind: "select", id: "service_advisor.name", label: "Service advisor", options: ["Jino", "Yaseen", "Hassan", "Salman"], section: SECTIONS.vehicle, page: "p-vehicle-2" },
   ]),
 
