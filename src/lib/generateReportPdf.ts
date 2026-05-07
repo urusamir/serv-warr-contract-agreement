@@ -192,7 +192,7 @@ export async function generateReportPdf(answers: Answers): Promise<jsPDF> {
     ["Vehicle make & model", v(answers, "vehicle.make_model")],
     ["Car ID", v(answers, "vehicle.registration_number")],
     ["VIN", v(answers, "vehicle.vin")],
-    ["Mileage", v(answers, "vehicle.service_type_mileage") ? `${v(answers, "vehicle.service_type_mileage")} KM` : ""],
+    ["Mileage", (() => { const m = v(answers, "vehicle.service_type_mileage"); if (!m) return ""; const stripped = m.replace(/\s*KM$/i, "").trim(); return `${stripped} KM`; })()],
     ["Customer name", v(answers, "customer.name")],
     ["Customer contact", v(answers, "customer.contact")],
     ["Service advisor", v(answers, "service_advisor.name")],
