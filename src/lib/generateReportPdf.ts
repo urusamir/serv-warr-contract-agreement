@@ -190,9 +190,9 @@ export async function generateReportPdf(answers: Answers): Promise<jsPDF> {
   // Vehicle & Customer summary (auto-filled date/time, no service plan)
   const vehicleRows: [string, string][] = [
     ["Vehicle make & model", v(answers, "vehicle.make_model")],
-    ["Registration number", v(answers, "vehicle.registration_number")],
+    ["Car ID", v(answers, "vehicle.registration_number")],
     ["VIN", v(answers, "vehicle.vin")],
-    ["Service type / mileage", v(answers, "vehicle.service_type_mileage")],
+    ["Mileage", v(answers, "vehicle.service_type_mileage")],
     ["Customer name", v(answers, "customer.name")],
     ["Customer contact", v(answers, "customer.contact")],
     ["Service advisor", v(answers, "service_advisor.name")],

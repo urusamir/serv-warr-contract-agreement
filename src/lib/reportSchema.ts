@@ -114,15 +114,15 @@ export const steps: Step[] = [
 
   // ===== Vehicle & Customer (3 pages) =====
   page("p-vehicle-1", SECTIONS.vehicle, "Vehicle details", [
+    { kind: "text", id: "vehicle.vin", label: "VIN *", placeholder: "e.g. 1XXXX0000XX000000", section: SECTIONS.vehicle, page: "p-vehicle-1" },
     { kind: "text", id: "vehicle.make_model", label: "Vehicle make & model", placeholder: "e.g. Toyota Corolla", section: SECTIONS.vehicle, page: "p-vehicle-1" },
-    { kind: "text", id: "vehicle.registration_number", label: "Registration number", placeholder: "e.g. AB/12345", section: SECTIONS.vehicle, page: "p-vehicle-1" },
-    { kind: "text", id: "vehicle.vin", label: "VIN", placeholder: "e.g. 1XXXX0000XX000000", section: SECTIONS.vehicle, page: "p-vehicle-1" },
-    { kind: "text", id: "vehicle.service_type_mileage", label: "Service type / mileage", placeholder: "e.g. 30,000 KM", section: SECTIONS.vehicle, page: "p-vehicle-1" },
+    { kind: "text", id: "vehicle.registration_number", label: "Car ID", placeholder: "e.g. AB/12345", section: SECTIONS.vehicle, page: "p-vehicle-1" },
+    { kind: "text", id: "vehicle.service_type_mileage", label: "Mileage", placeholder: "e.g. 30,000 KM", section: SECTIONS.vehicle, page: "p-vehicle-1" },
   ]),
   page("p-vehicle-2", SECTIONS.vehicle, "Customer & advisor", [
     { kind: "text", id: "customer.name", label: "Customer name", placeholder: "e.g. John Doe", section: SECTIONS.vehicle, page: "p-vehicle-2" },
     { kind: "text", id: "customer.contact", label: "Customer contact", placeholder: "e.g. 555-0100", section: SECTIONS.vehicle, page: "p-vehicle-2" },
-    { kind: "text", id: "service_advisor.name", label: "Service advisor name", placeholder: "e.g. Jane Smith", section: SECTIONS.vehicle, page: "p-vehicle-2" },
+    { kind: "select", id: "service_advisor.name", label: "Service advisor", options: ["Jino", "Yaseen", "Hassan", "Salman"], section: SECTIONS.vehicle, page: "p-vehicle-2" },
   ]),
 
   // ===== Interior (1 page, 6 items) =====
