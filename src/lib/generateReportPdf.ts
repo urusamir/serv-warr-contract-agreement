@@ -198,7 +198,6 @@ export async function generateReportPdf(answers: Answers): Promise<jsPDF> {
     ["Customer email", v(answers, "customer.email")],
     ["Service advisor", v(answers, "service_advisor.name")],
     ["Service date", now.toLocaleDateString()],
-    ["Service time", now.toLocaleTimeString()],
   ];
 
   autoTable(doc, {
