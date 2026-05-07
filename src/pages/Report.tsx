@@ -482,6 +482,9 @@ function FieldInput({
 }) {
   switch (field.kind) {
     case "text":
+      if (field.id === "vehicle.vin") {
+        return <VinAutocompleteField value={value ?? ""} onChange={onChange} autoFocus={autoFocus} />;
+      }
       return <TextField value={value ?? ""} onChange={onChange} placeholder={field.placeholder} suffix={field.suffix} autoFocus={autoFocus} readOnly={readOnly} />;
     case "longtext":
       return <LongTextField value={value ?? ""} onChange={onChange} placeholder={field.placeholder} />;
@@ -801,6 +804,86 @@ function ReviewView({
         {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
         {submitting ? "Submitting..." : "Submit report"}
       </button>
+    </div>
+  );
+}
+
+function VinAutocompleteField({
+  value, onChange, autoFocus,
+}: { value: string; onChange: (v: string) => void; autoFocus?: boolean }) {
+  const [inputValue, setInputValue] = useState(value);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [open, setOpen] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { if (autoFocus) inputRef.current?.focus(); }, [autoFocus]);
+  useEffect(() => { setInputValue(value); }, [value]);
+
+  useEffect(() => {
+    const trimmed = inputValue.trim();
+    if (trimmed.length < 6) { setSuggestions([]); setOpen(false); return; }
+    setSearching(true);
+    const timer = setTimeout(async () => {
+      const { data } = await supabase
+        .from("service_reports_vehicle_customers")
+        .select("vin_no")
+        .ilike("vin_no", `%${trimmed}`)
+        .limit(10);
+      const vins = (data ?? []).map((r: any) => r.vin_no as string).filter(Boolean);
+      setSuggestions(vins);
+      setOpen(vins.length > 0);
+      setSearching(false);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [inputValue]);
+
+  const select = (vin: string) => {
+    setInputValue(vin);
+    setSuggestions([]);
+    setOpen(false);
+    onChange(vin);
+  };
+
+  const handleBlur = (e: React.FocusEvent) => {
+    if (!containerRef.current?.contains(e.relatedTarget as Node)) {
+      setOpen(false);
+      if (inputValue.trim()) onChange(inputValue.trim());
+    }
+  };
+
+  return (
+    <div ref={containerRef} className="relative" onBlur={handleBlur}>
+      <div className="kavak-input flex items-center gap-2">
+        <input
+          ref={inputRef}
+          className="flex-1 bg-transparent outline-none"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          placeholder="Type last 6 digits of VIN…"
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setOpen(false);
+            if (e.key === "Enter" && suggestions.length === 1) { e.preventDefault(); select(suggestions[0]); }
+          }}
+        />
+        {searching && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />}
+      </div>
+      {open && (
+        <ul className="absolute left-0 right-0 top-full mt-1 z-50 bg-background border border-border rounded-md shadow-lg overflow-hidden">
+          {suggestions.map((vin) => (
+            <li key={vin}>
+              <button
+                type="button"
+                className="w-full text-left px-4 py-2.5 text-sm font-mono hover:bg-muted transition"
+                onMouseDown={(e) => { e.preventDefault(); select(vin); }}
+              >
+                {vin}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
