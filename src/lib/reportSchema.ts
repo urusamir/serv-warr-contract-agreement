@@ -20,7 +20,7 @@ export type ActionsByTier = {
 };
 
 export type FieldStep =
-  | { kind: "text"; id: string; label: string; placeholder?: string; section: string; page: string }
+  | { kind: "text"; id: string; label: string; placeholder?: string; suffix?: string; section: string; page: string }
   | { kind: "longtext"; id: string; label: string; placeholder?: string; section: string; page: string }
   | { kind: "number"; id: string; label: string; unit?: string; section: string; page: string }
   | { kind: "date"; id: string; label: string; section: string; page: string }
@@ -117,7 +117,7 @@ export const steps: Step[] = [
     { kind: "text", id: "vehicle.vin", label: "VIN *", placeholder: "e.g. 1XXXX0000XX000000", section: SECTIONS.vehicle, page: "p-vehicle-1" },
     { kind: "text", id: "vehicle.make_model", label: "Vehicle make & model", placeholder: "e.g. Toyota Corolla", section: SECTIONS.vehicle, page: "p-vehicle-1" },
     { kind: "text", id: "vehicle.registration_number", label: "Car ID", placeholder: "e.g. AB/12345", section: SECTIONS.vehicle, page: "p-vehicle-1" },
-    { kind: "text", id: "vehicle.service_type_mileage", label: "Mileage", placeholder: "e.g. 30,000 KM", section: SECTIONS.vehicle, page: "p-vehicle-1" },
+    { kind: "text", id: "vehicle.service_type_mileage", label: "Mileage", placeholder: "e.g. 30,000", suffix: "KM", section: SECTIONS.vehicle, page: "p-vehicle-1" },
   ]),
   page("p-vehicle-2", SECTIONS.vehicle, "Customer & advisor", [
     { kind: "text", id: "customer.name", label: "Customer name", placeholder: "e.g. John Doe", section: SECTIONS.vehicle, page: "p-vehicle-2" },

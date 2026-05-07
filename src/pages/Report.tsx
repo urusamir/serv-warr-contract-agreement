@@ -413,7 +413,7 @@ function FieldInput({
 }) {
   switch (field.kind) {
     case "text":
-      return <TextField value={value ?? ""} onChange={onChange} placeholder={field.placeholder} autoFocus={autoFocus} />;
+      return <TextField value={value ?? ""} onChange={onChange} placeholder={field.placeholder} suffix={field.suffix} autoFocus={autoFocus} />;
     case "longtext":
       return <LongTextField value={value ?? ""} onChange={onChange} placeholder={field.placeholder} />;
     case "number":
@@ -445,18 +445,21 @@ function FieldInput({
 /* ---------------- Field components ---------------- */
 
 function TextField({
-  value, onChange, placeholder, autoFocus,
-}: { value: string; onChange: (v: string) => void; placeholder?: string; autoFocus?: boolean }) {
+  value, onChange, placeholder, suffix, autoFocus,
+}: { value: string; onChange: (v: string) => void; placeholder?: string; suffix?: string; autoFocus?: boolean }) {
   const ref = useRef<HTMLInputElement>(null);
   useEffect(() => { if (autoFocus) ref.current?.focus(); }, [autoFocus]);
   return (
-    <input
-      ref={ref}
-      className="kavak-input"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder ?? "Type your answer..."}
-    />
+    <div className="flex items-baseline gap-3">
+      <input
+        ref={ref}
+        className="kavak-input flex-1"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder ?? "Type your answer..."}
+      />
+      {suffix && <span className="text-base text-muted-foreground">{suffix}</span>}
+    </div>
   );
 }
 
