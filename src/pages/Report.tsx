@@ -15,6 +15,7 @@ import {
 import { buildPayload } from "@/lib/buildPayload";
 import { generateReportPdf, saveGeneratedPdf } from "@/lib/generateReportPdf";
 import { uploadToSupabase } from "@/lib/uploadToSupabase";
+import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +33,48 @@ const Report = () => {
   const [direction, setDirection] = useState(1);
   const [answers, setAnswers] = useState<Answers>({});
   const [submitting, setSubmitting] = useState(false);
+  const [vinStatus, setVinStatus] = useState<"idle" | "loading" | "found" | "not_found">("idle");
+  const [vinAutoFilled, setVinAutoFilled] = useState<ReadonlySet<string>>(new Set());
+
+  useEffect(() => {
+    const vin = (answers["vehicle.vin"] as string)?.trim();
+    if (!vin) {
+      setVinStatus("idle");
+      setVinAutoFilled(new Set());
+      return;
+    }
+    // Unlock previously locked fields while new lookup runs
+    setVinAutoFilled(new Set());
+    setVinStatus("loading");
+    const timer = setTimeout(async () => {
+      const { data } = await supabase
+        .from("service_reports_vehicle_customers")
+        .select("car_detail,car_id,mileage,customer_name,customer_phone,customer_email")
+        .eq("vin_no", vin)
+        .maybeSingle();
+      if (data) {
+        const filled = new Set<string>();
+        const patch: Answers = {};
+        const map: [string, string][] = [
+          ["car_detail",     "vehicle.make_model"],
+          ["car_id",         "vehicle.registration_number"],
+          ["mileage",        "vehicle.service_type_mileage"],
+          ["customer_name",  "customer.name"],
+          ["customer_phone", "customer.contact"],
+          ["customer_email", "customer.email"],
+        ];
+        for (const [col, key] of map) {
+          if (data[col]) { patch[key] = data[col]; filled.add(key); }
+        }
+        setAnswers(prev => ({ ...prev, ...patch }));
+        setVinAutoFilled(filled);
+        setVinStatus("found");
+      } else {
+        setVinStatus("not_found");
+      }
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [answers["vehicle.vin"]]);
 
   const total = steps.length;
   const step = steps[index];
@@ -160,6 +203,8 @@ const Report = () => {
                 onSubmit={submit}
                 submitting={submitting}
                 onJumpTo={jumpToField}
+                vinStatus={vinStatus}
+                vinAutoFilled={vinAutoFilled}
               />
             </motion.div>
           </AnimatePresence>
@@ -225,6 +270,8 @@ function StepView({
   onSubmit,
   submitting,
   onJumpTo,
+  vinStatus,
+  vinAutoFilled,
 }: {
   step: Step;
   tier: ServiceTier | undefined;
@@ -234,6 +281,8 @@ function StepView({
   onSubmit: () => void;
   submitting: boolean;
   onJumpTo: (id: string) => void;
+  vinStatus: "idle" | "loading" | "found" | "not_found";
+  vinAutoFilled: ReadonlySet<string>;
 }) {
   if (step.kind === "service-type") {
     return (
@@ -281,9 +330,25 @@ function StepView({
             autoFocus={i === 0}
             value={answers[f.id]}
             onChange={(v) => setAnswer(f.id, v)}
+            readOnly={vinAutoFilled.has(f.id)}
           />
         ))}
       </div>
+
+      {step.id === "p-vehicle-1" && vinStatus !== "idle" && (
+        <div className={cn(
+          "mt-6 flex items-center gap-2 text-sm rounded-md px-4 py-2.5",
+          vinStatus === "loading"   && "text-muted-foreground bg-muted",
+          vinStatus === "found"     && "text-green-700 bg-green-50 dark:text-green-400 dark:bg-green-950",
+          vinStatus === "not_found" && "text-muted-foreground bg-muted",
+        )}>
+          {vinStatus === "loading"   && <Loader2 className="h-4 w-4 animate-spin" />}
+          {vinStatus === "found"     && <Check className="h-4 w-4" />}
+          {vinStatus === "loading"   && "Looking up VIN…"}
+          {vinStatus === "found"     && "Details loaded from Kavak database — fields are locked"}
+          {vinStatus === "not_found" && "VIN not found — fill in details manually"}
+        </div>
+      )}
 
       <div className="mt-10 flex items-center gap-3">
         <button
@@ -378,12 +443,14 @@ function FieldRow({
   value,
   onChange,
   autoFocus,
+  readOnly,
 }: {
   field: FieldStep;
   tier: ServiceTier | undefined;
   value: any;
   onChange: (v: any) => void;
   autoFocus?: boolean;
+  readOnly?: boolean;
 }) {
   return (
     <div>
@@ -393,7 +460,7 @@ function FieldRow({
           <span className="ml-2 text-sm font-normal text-muted-foreground">({field.unit})</span>
         ) : null}
       </label>
-      <FieldInput field={field} tier={tier} value={value} onChange={onChange} autoFocus={autoFocus} />
+      <FieldInput field={field} tier={tier} value={value} onChange={onChange} autoFocus={autoFocus} readOnly={readOnly} />
     </div>
   );
 }
@@ -404,16 +471,18 @@ function FieldInput({
   value,
   onChange,
   autoFocus,
+  readOnly,
 }: {
   field: FieldStep;
   tier: ServiceTier | undefined;
   value: any;
   onChange: (v: any) => void;
   autoFocus?: boolean;
+  readOnly?: boolean;
 }) {
   switch (field.kind) {
     case "text":
-      return <TextField value={value ?? ""} onChange={onChange} placeholder={field.placeholder} suffix={field.suffix} autoFocus={autoFocus} />;
+      return <TextField value={value ?? ""} onChange={onChange} placeholder={field.placeholder} suffix={field.suffix} autoFocus={autoFocus} readOnly={readOnly} />;
     case "longtext":
       return <LongTextField value={value ?? ""} onChange={onChange} placeholder={field.placeholder} />;
     case "number":
@@ -445,10 +514,20 @@ function FieldInput({
 /* ---------------- Field components ---------------- */
 
 function TextField({
-  value, onChange, placeholder, suffix, autoFocus,
-}: { value: string; onChange: (v: string) => void; placeholder?: string; suffix?: string; autoFocus?: boolean }) {
+  value, onChange, placeholder, suffix, autoFocus, readOnly,
+}: { value: string; onChange: (v: string) => void; placeholder?: string; suffix?: string; autoFocus?: boolean; readOnly?: boolean }) {
   const ref = useRef<HTMLInputElement>(null);
-  useEffect(() => { if (autoFocus) ref.current?.focus(); }, [autoFocus]);
+  useEffect(() => { if (autoFocus && !readOnly) ref.current?.focus(); }, [autoFocus, readOnly]);
+  if (readOnly) {
+    return (
+      <div className="flex items-baseline gap-3">
+        <div className="kavak-input flex-1 bg-muted text-muted-foreground cursor-not-allowed select-none">
+          {value || <span className="opacity-40">—</span>}
+        </div>
+        {suffix && <span className="text-base text-muted-foreground">{suffix}</span>}
+      </div>
+    );
+  }
   return (
     <div className="flex items-baseline gap-3">
       <input
