@@ -15,6 +15,7 @@ import {
 import { buildPayload } from "@/lib/buildPayload";
 import { generateReportPdf, saveGeneratedPdf } from "@/lib/generateReportPdf";
 import { uploadToSupabase } from "@/lib/uploadToSupabase";
+import { sendReportWebhook } from "@/lib/sendReportWebhook";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -105,6 +106,13 @@ const Report = () => {
       } catch (supabaseErr) {
         console.error("Supabase upload failed", supabaseErr);
         toast.error("Report saved locally, but cloud backup failed.");
+      }
+
+      try {
+        await sendReportWebhook(doc, answers);
+      } catch (webhookErr) {
+        console.error("Webhook failed", webhookErr);
+        toast.error("Report submitted, but failed to send email to service advisor.");
       }
 
       saveGeneratedPdf(doc, answers);
