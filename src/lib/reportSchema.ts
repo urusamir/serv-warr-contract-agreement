@@ -212,8 +212,6 @@ export const steps: Step[] = [
   page("p-engine-1", SECTIONS.engine, "Engine Room", [
     checklist("engine.air_filter", "Air Filter", SECTIONS.engine, "p-engine-1", tier("C", "C", "R")),
     checklist("engine.fuel_filter", "Fuel Filter", SECTIONS.engine, "p-engine-1", tier("I", "I", "I")),
-    checklist("engine.spark_plugs_normal", "Spark Plugs (Normal)", SECTIONS.engine, "p-engine-1", tier("I", "I", "I")),
-    checklist("engine.spark_plugs_platinum_iridium", "Spark Plugs (Platinum/Iridium)", SECTIONS.engine, "p-engine-1", tier("I", "I", "I")),
     checklist("engine.battery_electrolyte_connections", "Battery Electrolyte and Connections", SECTIONS.engine, "p-engine-1", tier("C/L", "C/L", "C/L")),
     checklist("engine.battery_report", "Battery Report", SECTIONS.engine, "p-engine-1", tier("I", "I", "I")),
   ]),
@@ -222,8 +220,6 @@ export const steps: Step[] = [
     checklist("engine.windshield_fluid", "Windshield Fluid", SECTIONS.engine, "p-engine-2", tier("I", "I", "I")),
     checklist("engine.power_steering_fluid", "Power Steering Fluid", SECTIONS.engine, "p-engine-2", tier("I", "I", "I")),
     checklist("engine.drive_belts", "Drive Belts", SECTIONS.engine, "p-engine-2", tier("I", "I", "I")),
-    // Timing Belt — Not Applicable in Minor / Intermediate
-    checklist("engine.timing_belt", "Timing Belt", SECTIONS.engine, "p-engine-2", tier("", "", "R")),
   ]),
 
   // ===== Final Check (1 page, 3 items) =====

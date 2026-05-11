@@ -51,7 +51,6 @@ function drawCoverPage(
   _logo: { dataUrl: string; width: number; height: number } | null,
   car: { dataUrl: string; width: number; height: number } | null,
   tierLabel: string,
-  generatedAt: string,
 ) {
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -93,16 +92,10 @@ function drawCoverPage(
   doc.setFontSize(16);
   doc.text(tierLabel, pageWidth / 2, stripY + stripH * 0.72, { align: "center" });
 
-  // Cover the baked-in footer text ("Generated: ..." + "Kavak Service Report • Page 1 of 4")
-  // at the bottom of the artwork with a tall black band, then draw only the
-  // dynamic generated timestamp + correct page number.
+  // Cover the baked-in footer text at the bottom of the artwork with a tall
+  // black band, then draw only the correct page number.
   doc.setFillColor(0, 0, 0);
   doc.rect(0, pageHeight - 90, pageWidth, 90, "F");
-
-  doc.setTextColor(220, 220, 220);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.text(`Generated: ${generatedAt}`, pageWidth / 2, pageHeight - 50, { align: "center" });
 
   doc.setFontSize(9);
   doc.setTextColor(180, 180, 180);
@@ -139,9 +132,7 @@ export async function generateReportPdf(answers: Answers): Promise<jsPDF> {
   const tier: ServiceTier | undefined = answers["service.type"];
   const tierLabel = tier ? SERVICE_TIER_LABEL[tier] : "—";
 
-  // Auto-fill date/time from current moment
   const now = new Date();
-  const generatedAt = now.toLocaleString();
 
   // ===== Cover page =====
   let logo: { dataUrl: string; width: number; height: number } | null = null;
@@ -156,7 +147,7 @@ export async function generateReportPdf(answers: Answers): Promise<jsPDF> {
   } catch {
     car = null;
   }
-  drawCoverPage(doc, logo, car, tierLabel, generatedAt);
+  drawCoverPage(doc, logo, car, tierLabel);
 
   // ===== Report body on a new page =====
   doc.addPage();
