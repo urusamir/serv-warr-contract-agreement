@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Angry Birds — Sling Into Action</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --red: #e8251a;
+            --yellow: #f5c518;
+            --green: #4caf50;
+            --dark-green: #2e7d32;
+            --blue: #2196f3;
+            --sky: #87ceeb;
+            --white: #fff;
+            --dark: #1a1a2e;
+        }
+
+        body { font-family: 'Nunito', sans-serif; overflow-x: hidden; }
+
+        /* ── NAV ── */
+        nav {
+            position: fixed; top: 0; width: 100%; z-index: 100;
+            padding: 16px 48px;
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(0,0,0,0.25); backdrop-filter: blur(10px);
+        }
+        .logo {
+            font-family: 'Fredoka One', cursive; font-size: 1.9rem;
+            color: var(--yellow); text-shadow: 3px 3px 0 #c0392b; letter-spacing: 1px;
+        }
+        nav ul { list-style: none; display: flex; gap: 36px; }
+        nav ul li a {
+            color: white; text-decoration: none; font-weight: 800; font-size: 1rem;
+            transition: color .3s;
+        }
+        nav ul li a:hover { color: var(--yellow); }
+        .btn-nav {
+            background: var(--red); color: white; padding: 10px 26px;
+            border-radius: 50px; font-weight: 800; font-size: 1rem;
+            text-decoration: none; border: 3px solid #a93226;
+            box-shadow: 0 5px 0 #a93226; transition: all .15s;
+        }
+        .btn-nav:hover { transform: translateY(3px); box-shadow: 0 2px 0 #a93226; }
+
+        /* ── HERO ── */
+        #hero {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #1565c0 0%, #87ceeb 45%, #4caf50 45%, #2e7d32 100%);
+            position: relative; overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* clouds */
+        .cloud {
+            position: absolute; background: white; border-radius: 50px; opacity: .9;
+        }
+        .cloud::before, .cloud::after {
+            content: ''; position: absolute; background: white; border-radius: 50%;
+        }
+        .c1 { width:130px; height:44px; top:14%; left:-160px; animation: fc 22s linear infinite; }
+        .c1::before { width:65px; height:65px; top:-32px; left:18px; }
+        .c1::after  { width:44px; height:44px; top:-22px; left:58px; }
+        .c2 { width:190px; height:54px; top:26%; left:-220px; animation: fc 30s linear infinite 9s; }
+        .c2::before { width:86px; height:86px; top:-44px; left:22px; }
+        .c2::after  { width:64px; height:64px; top:-32px; left:88px; }
+        .c3 { width:100px; height:36px; top:9%;  left:-120px; animation: fc 16s linear infinite 3s; }
+        .c3::before { width:52px; height:52px; top:-26px; left:10px; }
+        .c3::after  { width:36px; height:36px; top:-18px; left:46px; }
+        @keyframes fc { 0%{transform:translateX(0)} 100%{transform:translateX(calc(100vw + 260px))} }
+
+        .hero-content {
+            text-align: center; position: relative; z-index: 10;
+            padding: 130px 24px 60px;
+        }
+        .badge {
+            display: inline-block; background: var(--yellow); color: #333;
+            padding: 6px 22px; border-radius: 50px; font-size: .9rem; font-weight: 800;
+            margin-bottom: 22px; border: 3px solid #d4ac0d;
+            animation: bob 2s ease-in-out infinite;
+        }
+        @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+
+        .hero-title {
+            font-family: 'Fredoka One', cursive;
+            font-size: clamp(3.2rem, 9vw, 7.5rem);
+            color: var(--yellow);
+            text-shadow: 6px 6px 0 #c0392b, -2px -2px 0 #c0392b, 2px -2px 0 #c0392b, -2px 2px 0 #c0392b;
+            line-height: 1; margin-bottom: 14px;
+            animation: wobble 3s ease-in-out infinite;
+        }
+        @keyframes wobble { 0%,100%{transform:rotate(-1deg)} 50%{transform:rotate(1deg)} }
+
+        .hero-sub {
+            font-size: clamp(1rem, 2.5vw, 1.4rem); color: white; font-weight: 800;
+            margin-bottom: 44px; text-shadow: 2px 2px 6px rgba(0,0,0,.5);
+        }
+        .hero-btns { display:flex; gap:18px; justify-content:center; flex-wrap:wrap; margin-bottom:56px; }
+
+        .btn-primary {
+            background: var(--red); color: white; padding: 16px 44px;
+            border-radius: 50px; font-family: 'Fredoka One', cursive; font-size: 1.35rem;
+            text-decoration: none; border: 4px solid #a93226;
+            box-shadow: 0 8px 0 #a93226; transition: all .15s; display:inline-block;
+        }
+        .btn-primary:hover { transform: translateY(4px); box-shadow: 0 4px 0 #a93226; }
+        .btn-secondary {
+            background: var(--yellow); color: #333; padding: 16px 44px;
+            border-radius: 50px; font-family: 'Fredoka One', cursive; font-size: 1.35rem;
+            text-decoration: none; border: 4px solid #d4ac0d;
+            box-shadow: 0 8px 0 #d4ac0d; transition: all .15s; display:inline-block;
+        }
+        .btn-secondary:hover { transform: translateY(4px); box-shadow: 0 4px 0 #d4ac0d; }
+
+        /* scene */
+        .hero-scene {
+            position: relative; display: flex; align-items: flex-end;
+            justify-content: center; gap: 24px;
+        }
+
+        /* birds */
+        .bird-red {
+            width: 84px; height: 84px;
+            background: radial-gradient(circle at 38% 33%, #ff7070, #e8251a 60%, #b71c1c);
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            border: 3px solid #922b21; position: relative;
+            box-shadow: inset -5px -5px 10px rgba(0,0,0,.2);
+            animation: birdBob 2s ease-in-out infinite;
+        }
+        .bird-red::before {
+            content:''; position:absolute;
+            width:20px; height:15px; background:white; border-radius:50%;
+            top:22px; left:54px; box-shadow:-30px 0 0 white;
+        }
+        .bird-red::after {
+            content:''; position:absolute;
+            width:9px; height:9px; background:#111; border-radius:50%;
+            top:26px; left:58px;
+            box-shadow: -30px 0 0 #111, -11px 17px 0 0 #e67e22, -15px 17px 0 0 #e67e22;
+        }
+        /* tuft on red */
+        .bird-red .tuft {
+            position:absolute; top:-12px; left:50%; transform:translateX(-50%);
+            width:10px; height:18px;
+            background:#c0392b; border-radius:50% 50% 0 0;
+            transform-origin: bottom center;
+            box-shadow: -8px 2px 0 #c0392b, 8px 2px 0 #c0392b;
+        }
+
+        .bird-yellow {
+            width: 72px; height: 78px;
+            background: radial-gradient(circle at 38% 33%, #ffe566, #f5c518 60%, #c9a800);
+            clip-path: polygon(50% 0%, 96% 28%, 100% 65%, 75% 100%, 25% 100%, 0% 65%, 4% 28%);
+            animation: birdBob 2s ease-in-out infinite .5s;
+            position:relative;
+        }
+
+        .bird-blue {
+            width: 58px; height: 58px;
+            background: radial-gradient(circle at 38% 33%, #74b9ff, #2196f3 60%, #1565c0);
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            border: 3px solid #1565c0;
+            animation: birdBob 2s ease-in-out infinite 1s;
+        }
+        @keyframes birdBob { 0%,100%{transform:translateY(0) rotate(-3deg)} 50%{transform:translateY(-14px) rotate(3deg)} }
+
+        /* pig */
+        .pig {
+            width: 68px; height: 68px;
+            background: radial-gradient(circle at 38% 33%, #81c784, #4caf50 60%, #2e7d32);
+            border-radius: 50%; border: 3px solid #2e7d32; position:relative;
+            animation: pigBob 2.5s ease-in-out infinite .3s;
+        }
+        .pig::before {
+            content:''; position:absolute;
+            width:14px; height:12px; background:white; border-radius:50%;
+            top:18px; left:44px; box-shadow:-26px 0 0 white;
+        }
+        .pig::after {
+            content:''; position:absolute;
+            width:24px; height:17px; background:#66bb6a; border-radius:50%;
+            bottom:13px; left:50%; transform:translateX(-50%);
+            border:2px solid #388e3c;
+        }
+        .pig .pupil { position:absolute; width:7px; height:7px; background:#111; border-radius:50%; top:22px; left:48px; box-shadow:-26px 0 0 #111; }
+        .pig-sm { width:50px; height:50px; margin-bottom:14px; }
+        @keyframes pigBob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+
+        /* slingshot */
+        .slingshot { width:64px; height:130px; position:relative; }
+        .sl-stem { width:14px; height:96px; background:linear-gradient(to right,#8d6e63,#5d4037,#8d6e63); border-radius:7px; position:absolute; bottom:0; left:50%; transform:translateX(-50%); }
+        .sl-left  { width:12px; height:54px; background:linear-gradient(to right,#8d6e63,#5d4037); border-radius:6px; position:absolute; top:0; left:6px; transform:rotate(-15deg); }
+        .sl-right { width:12px; height:54px; background:linear-gradient(to right,#5d4037,#8d6e63); border-radius:6px; position:absolute; top:0; right:6px; transform:rotate(15deg); }
+        .sl-band-l { position:absolute; top:10px; left:12px; width:60px; height:3px; background:#5d4037; transform:rotate(20deg); transform-origin:left; }
+        .sl-band-r { position:absolute; top:10px; right:12px; width:60px; height:3px; background:#5d4037; transform:rotate(-20deg); transform-origin:right; }
+
+        /* score */
+        .score-box {
+            position:absolute; top:100px; right:5%;
+            background:rgba(0,0,0,.5); border:3px solid var(--yellow); border-radius:16px;
+            padding:12px 22px; text-align:center; color:white;
+        }
+        .score-label { font-size:.7rem; font-weight:800; opacity:.8; letter-spacing:2px; }
+        .score-val { font-family:'Fredoka One',cursive; font-size:2rem; color:var(--yellow); }
+
+        /* stars */
+        .hero-stars { position:absolute; top:6%; right:9%; display:flex; gap:10px; }
+        .star { font-size:2rem; filter:drop-shadow(0 0 8px gold); animation:starPulse 2s ease-in-out infinite; }
+        .star:nth-child(2){animation-delay:.3s} .star:nth-child(3){animation-delay:.6s}
+        @keyframes starPulse { 0%,100%{transform:scale(1) rotate(-8deg)} 50%{transform:scale(1.2) rotate(8deg)} }
+
+        /* ── CHARACTERS ── */
+        #characters {
+            background: #1a1a2e; padding: 100px 40px; position:relative; overflow:hidden;
+        }
+        #characters::before {
+            content:''; position:absolute; top:0; left:0; right:0; height:6px;
+            background:linear-gradient(90deg, var(--red), var(--yellow), var(--green), var(--blue));
+        }
+        .section-title {
+            font-family:'Fredoka One',cursive; font-size:clamp(2rem,5vw,3.5rem);
+            text-align:center; margin-bottom:60px; color:white;
+        }
+        .section-title span { color:var(--yellow); }
+
+        .chars-grid {
+            display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+            gap:24px; max-width:1100px; margin:0 auto;
+        }
+        .char-card {
+            background:rgba(255,255,255,.05); border:2px solid rgba(255,255,255,.1);
+            border-radius:24px; padding:32px 20px; text-align:center;
+            transition:transform .3s, background .3s, border-color .3s;
+            cursor:pointer; position:relative; overflow:hidden;
+        }
+        .char-card:hover { transform:translateY(-14px) scale(1.03); border-color:var(--yellow); background:rgba(255,255,255,.1); }
+        .char-emoji { font-size:3.8rem; display:block; margin-bottom:14px; animation:cFloat 3s ease-in-out infinite; }
+        .char-card:nth-child(2) .char-emoji{animation-delay:.4s}
+        .char-card:nth-child(3) .char-emoji{animation-delay:.8s}
+        .char-card:nth-child(4) .char-emoji{animation-delay:1.2s}
+        .char-card:nth-child(5) .char-emoji{animation-delay:1.6s}
+        @keyframes cFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+        .char-name { font-family:'Fredoka One',cursive; font-size:1.5rem; color:white; margin-bottom:8px; }
+        .char-badge {
+            display:inline-block; padding:4px 14px; border-radius:50px;
+            font-size:.75rem; font-weight:800; margin-bottom:12px;
+        }
+        .card-red    .char-badge { background:var(--red); color:white; }
+        .card-yellow .char-badge { background:var(--yellow); color:#333; }
+        .card-black  .char-badge { background:#333; color:white; border:1px solid #666; }
+        .card-blue   .char-badge { background:var(--blue); color:white; }
+        .card-white  .char-badge { background:white; color:#333; border:1px solid #ccc; }
+        .char-desc { font-size:.85rem; color:rgba(255,255,255,.6); font-weight:700; line-height:1.6; }
+
+        /* ── HOW TO PLAY ── */
+        #how-to-play {
+            background:linear-gradient(180deg,#4caf50 0%,#2e7d32 100%);
+            padding:100px 40px; position:relative; overflow:hidden;
+        }
+        #how-to-play::before {
+            content:''; position:absolute; top:-60px; left:-5%; width:110%; height:120px;
+            background:#1a1a2e; border-radius:0 0 50% 50%;
+        }
+        .steps-grid {
+            display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+            gap:28px; max-width:900px; margin:0 auto;
+        }
+        .step-card {
+            background:rgba(255,255,255,.15); border-radius:24px; padding:40px 24px;
+            text-align:center; border:2px solid rgba(255,255,255,.3);
+            backdrop-filter:blur(8px); transition:transform .3s;
+        }
+        .step-card:hover { transform:translateY(-10px); }
+        .step-num {
+            width:56px; height:56px; background:var(--yellow); border-radius:50%;
+            display:flex; align-items:center; justify-content:center;
+            font-family:'Fredoka One',cursive; font-size:1.8rem; color:#333;
+            margin:0 auto 18px; box-shadow:0 4px 0 #d4ac0d; border:3px solid #d4ac0d;
+        }
+        .step-icon { font-size:3rem; display:block; margin-bottom:14px; }
+        .step-title { font-family:'Fredoka One',cursive; font-size:1.6rem; color:white; margin-bottom:10px; }
+        .step-desc { font-size:.95rem; color:rgba(255,255,255,.85); font-weight:700; line-height:1.6; }
+
+        /* ── STATS ── */
+        #stats { background:var(--red); padding:80px 40px; }
+        .stats-grid {
+            display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+            gap:32px; max-width:900px; margin:0 auto; text-align:center;
+        }
+        .stat-num {
+            font-family:'Fredoka One',cursive; font-size:clamp(2.5rem,5vw,4rem);
+            color:var(--yellow); text-shadow:3px 3px 0 rgba(0,0,0,.2); display:block;
+        }
+        .stat-lbl { font-size:1rem; font-weight:800; color:white; opacity:.9; }
+
+        /* ── CTA ── */
+        #cta {
+            background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);
+            padding:110px 40px; text-align:center; position:relative; overflow:hidden;
+        }
+        .cta-ghost-l, .cta-ghost-r {
+            position:absolute; top:50%; font-size:9rem; opacity:.04;
+            animation:ghostFloat 8s ease-in-out infinite;
+        }
+        .cta-ghost-l { left:2%; transform:translateY(-50%); }
+        .cta-ghost-r { right:2%; transform:translateY(-50%); animation-delay:4s; }
+        @keyframes ghostFloat { 0%,100%{transform:translateY(-50%) scale(1)} 50%{transform:translateY(-58%) scale(1.08)} }
+        .cta-title { font-family:'Fredoka One',cursive; font-size:clamp(2rem,5vw,3.5rem); color:white; margin-bottom:16px; }
+        .cta-sub { font-size:1.1rem; color:rgba(255,255,255,.7); font-weight:700; margin-bottom:44px; }
+        .store-btns { display:flex; gap:20px; justify-content:center; flex-wrap:wrap; }
+        .store-btn {
+            display:flex; align-items:center; gap:14px;
+            background:rgba(255,255,255,.08); border:2px solid rgba(255,255,255,.25);
+            color:white; padding:16px 28px; border-radius:16px; text-decoration:none;
+            font-weight:800; transition:all .3s; backdrop-filter:blur(8px);
+        }
+        .store-btn:hover { background:rgba(255,255,255,.18); border-color:var(--yellow); transform:translateY(-6px); }
+        .store-icon { font-size:2.1rem; }
+        .store-text small { display:block; font-size:.7rem; opacity:.7; }
+        .store-text b { font-family:'Fredoka One',cursive; font-size:1.2rem; }
+
+        /* ── FOOTER ── */
+        footer {
+            background:#0d0d1a; padding:30px 48px;
+            display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;
+        }
+        .footer-logo { font-family:'Fredoka One',cursive; font-size:1.5rem; color:var(--yellow); text-shadow:2px 2px 0 #c0392b; }
+        .footer-links { display:flex; gap:24px; }
+        .footer-links a { color:rgba(255,255,255,.45); text-decoration:none; font-weight:700; font-size:.9rem; transition:color .3s; }
+        .footer-links a:hover { color:var(--yellow); }
+        .footer-copy { color:rgba(255,255,255,.25); font-size:.85rem; font-weight:700; }
+
+        /* ── REVEAL ── */
+        .reveal { opacity:0; transform:translateY(40px); transition:opacity .7s ease, transform .7s ease; }
+        .reveal.visible { opacity:1; transform:translateY(0); }
+
+        /* ── FLYING BIRD ── */
+        .flying-bird {
+            position:fixed; font-size:2.8rem; z-index:50; pointer-events:none;
+            animation:flyAcross 4s ease-in-out forwards; top:20%;
+        }
+        @keyframes flyAcross {
+            0%   { left:-100px; transform:rotate(-10deg); opacity:0; }
+            10%  { opacity:1; }
+            90%  { opacity:1; }
+            100% { left:110%; transform:rotate(10deg); opacity:0; }
+        }
+
+        @media(max-width:768px){
+            nav ul { display:none; }
+            #how-to-play::before { display:none; }
+            footer { flex-direction:column; text-align:center; }
+            nav { padding:14px 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+    <div class="logo">🐦 Angry Birds</div>
+    <ul>
+        <li><a href="#characters">Characters</a></li>
+        <li><a href="#how-to-play">How to Play</a></li>
+        <li><a href="#cta">Download</a></li>
+    </ul>
+    <a href="#cta" class="btn-nav">Play Now</a>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+    <div class="cloud c1"></div>
+    <div class="cloud c2"></div>
+    <div class="cloud c3"></div>
+
+    <div class="hero-stars">
+        <div class="star">⭐</div>
+        <div class="star">⭐</div>
+        <div class="star">⭐</div>
+    </div>
+
+    <div class="score-box">
+        <div class="score-label">HIGH SCORE</div>
+        <div class="score-val" id="scoreCounter">0</div>
+    </div>
+
+    <div class="hero-content">
+        <div class="badge">🎮 The #1 Physics Game of All Time</div>
+        <h1 class="hero-title">ANGRY<br>BIRDS</h1>
+        <p class="hero-sub">Those greedy pigs stole the eggs. It's payback time! 🥚</p>
+        <div class="hero-btns">
+            <a href="#cta" class="btn-primary">🚀 Launch Now</a>
+            <a href="#characters" class="btn-secondary">Meet the Flock</a>
+        </div>
+
+        <div class="hero-scene">
+            <div class="slingshot">
+                <div class="sl-left"></div>
+                <div class="sl-right"></div>
+                <div class="sl-stem"></div>
+            </div>
+            <div class="bird-red"><div class="tuft"></div></div>
+            <div class="bird-yellow" style="margin-bottom:8px"></div>
+            <div class="bird-blue"></div>
+            <div style="margin-left:36px">
+                <div class="pig"><div class="pupil"></div></div>
+            </div>
+            <div class="pig pig-sm"><div class="pupil"></div></div>
+        </div>
+    </div>
+</section>
+
+<!-- CHARACTERS -->
+<section id="characters">
+    <h2 class="section-title reveal">Meet the <span>Flock</span></h2>
+    <div class="chars-grid">
+        <div class="char-card card-red reveal">
+            <span class="char-emoji">🔴</span>
+            <div class="char-name">Red</div>
+            <span class="char-badge">LEADER</span>
+            <p class="char-desc">Fierce, loyal, first into battle. Don't let the size fool you — his anger is limitless.</p>
+        </div>
+        <div class="char-card card-yellow reveal">
+            <span class="char-emoji">💛</span>
+            <div class="char-name">Chuck</div>
+            <span class="char-badge">SPEED BOOST</span>
+            <p class="char-desc">Tap mid-flight to trigger a lightning burst that tears through wooden structures.</p>
+        </div>
+        <div class="char-card card-black reveal">
+            <span class="char-emoji">🖤</span>
+            <div class="char-name">Bomb</div>
+            <span class="char-badge">EXPLOSION</span>
+            <p class="char-desc">A walking time bomb with a short fuse and an even shorter temper. Boom.</p>
+        </div>
+        <div class="char-card card-blue reveal">
+            <span class="char-emoji">💙</span>
+            <div class="char-name">The Blues</div>
+            <span class="char-badge">TRIPLE SPLIT</span>
+            <p class="char-desc">Three for the price of one — perfect for smashing ice into tiny shards.</p>
+        </div>
+        <div class="char-card card-white reveal">
+            <span class="char-emoji">🤍</span>
+            <div class="char-name">Matilda</div>
+            <span class="char-badge">EGG BOMB</span>
+            <p class="char-desc">Deceptively calm, devastatingly effective. She drops explosive eggs on her way up.</p>
+        </div>
+    </div>
+</section>
+
+<!-- HOW TO PLAY -->
+<section id="how-to-play">
+    <h2 class="section-title reveal" style="color:white;margin-top:44px">How to <span style="color:var(--yellow)">Play</span></h2>
+    <div class="steps-grid">
+        <div class="step-card reveal">
+            <div class="step-num">1</div>
+            <span class="step-icon">🪃</span>
+            <div class="step-title">Pull Back</div>
+            <p class="step-desc">Drag your bird on the slingshot. The further you pull, the harder it flies.</p>
+        </div>
+        <div class="step-card reveal">
+            <div class="step-num">2</div>
+            <span class="step-icon">🎯</span>
+            <div class="step-title">Aim True</div>
+            <p class="step-desc">Line up your shot to hit the pigs and topple their rickety fortresses.</p>
+        </div>
+        <div class="step-card reveal">
+            <div class="step-num">3</div>
+            <span class="step-icon">💥</span>
+            <div class="step-title">Launch!</div>
+            <p class="step-desc">Release and watch the chaos unfold. Tap mid-flight to trigger special powers.</p>
+        </div>
+    </div>
+</section>
+
+<!-- STATS -->
+<section id="stats">
+    <div class="stats-grid">
+        <div class="reveal">
+            <span class="stat-num" data-target="5000000000">0</span>
+            <div class="stat-lbl">Downloads Worldwide</div>
+        </div>
+        <div class="reveal">
+            <span class="stat-num" data-target="500">0</span>
+            <div class="stat-lbl">Levels to Conquer</div>
+        </div>
+        <div class="reveal">
+            <span class="stat-num" data-target="30">0</span>
+            <div class="stat-lbl">Unique Bird Species</div>
+        </div>
+        <div class="reveal">
+            <span class="stat-num" data-target="16">0</span>
+            <div class="stat-lbl">Years of Chaos</div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section id="cta">
+    <div class="cta-ghost-l">🐦</div>
+    <div class="cta-ghost-r">🐷</div>
+    <h2 class="cta-title reveal">Ready to Get <span style="color:var(--yellow)">Angry?</span></h2>
+    <p class="cta-sub reveal">Free to download. Those eggs won't rescue themselves.</p>
+    <div class="store-btns reveal">
+        <a href="#" class="store-btn">
+            <span class="store-icon">🍎</span>
+            <div class="store-text"><small>Download on the</small><b>App Store</b></div>
+        </a>
+        <a href="#" class="store-btn">
+            <span class="store-icon">🤖</span>
+            <div class="store-text"><small>Get it on</small><b>Google Play</b></div>
+        </a>
+        <a href="#" class="store-btn">
+            <span class="store-icon">🪟</span>
+            <div class="store-text"><small>Available on</small><b>Windows</b></div>
+        </a>
+    </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+    <div class="footer-logo">🐦 Angry Birds</div>
+    <div class="footer-links">
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+        <a href="#">Support</a>
+        <a href="#">Press Kit</a>
+    </div>
+    <div class="footer-copy">© 2024 Rovio Entertainment. All rights reserved.</div>
+</footer>
+
+<script>
+    // Scroll reveal
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry, i) => {
+            if (entry.isIntersecting) {
+                setTimeout(() => entry.target.classList.add('visible'), i * 100);
+            }
+        });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    // Animated score counter
+    let score = 0;
+    const scoreEl = document.getElementById('scoreCounter');
+    setInterval(() => {
+        score += Math.floor(Math.random() * 480) + 120;
+        if (score > 99999) score = 0;
+        scoreEl.textContent = score.toLocaleString();
+    }, 500);
+
+    // Stat number counters
+    const statObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting && !entry.target.dataset.counted) {
+                entry.target.dataset.counted = '1';
+                const target = parseInt(entry.target.dataset.target);
+                let current = 0;
+                const step = target / 60;
+                const timer = setInterval(() => {
+                    current += step;
+                    if (current >= target) { current = target; clearInterval(timer); }
+                    const v = Math.floor(current);
+                    entry.target.textContent =
+                        target >= 1e9 ? (v / 1e9).toFixed(1) + 'B+' :
+                        target >= 1e6 ? (v / 1e6).toFixed(0) + 'M+' :
+                        v + '+';
+                }, 28);
+            }
+        });
+    }, { threshold: 0.3 });
+    document.querySelectorAll('.stat-num[data-target]').forEach(el => statObserver.observe(el));
+
+    // Random bird flies across on scroll
+    let lastFly = 0;
+    window.addEventListener('scroll', () => {
+        const now = Date.now();
+        if (now - lastFly > 7000 && Math.random() > 0.55) {
+            lastFly = now;
+            const b = document.createElement('div');
+            b.className = 'flying-bird';
+            b.textContent = ['🐦','🔴','💛','💙','🖤'][Math.floor(Math.random() * 5)];
+            b.style.top = (Math.random() * 60 + 10) + '%';
+            document.body.appendChild(b);
+            setTimeout(() => b.remove(), 4200);
+        }
+    });
+
+    // Smooth scroll
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+        a.addEventListener('click', e => {
+            const t = document.querySelector(a.getAttribute('href'));
+            if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth' }); }
+        });
+    });
+
+    // Card click bounce
+    document.querySelectorAll('.char-card').forEach(card => {
+        card.addEventListener('click', () => {
+            card.style.transform = 'scale(0.93) translateY(-14px)';
+            setTimeout(() => card.style.transform = '', 150);
+        });
+    });
+</script>
+</body>
+</html>
