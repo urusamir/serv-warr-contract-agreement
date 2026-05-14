@@ -125,7 +125,7 @@ export const steps: Step[] = [
     { kind: "text", id: "customer.name", label: "Customer name", placeholder: "e.g. John Doe", section: SECTIONS.vehicle, page: "p-vehicle-2" },
     { kind: "text", id: "customer.contact", label: "Customer contact", placeholder: "e.g. 555-0100", section: SECTIONS.vehicle, page: "p-vehicle-2" },
     { kind: "text", id: "customer.email", label: "Customer email", placeholder: "e.g. john@example.com", section: SECTIONS.vehicle, page: "p-vehicle-2" },
-    { kind: "select", id: "service_advisor.name", label: "Service advisor", options: ["Hassan Ishaque", "Jino Varghese", "Salman Alblooshi", "Yaseen Ustad"], section: SECTIONS.vehicle, page: "p-vehicle-2" },
+    { kind: "text", id: "service_advisor.name", label: "Service advisor", placeholder: "e.g. Jino Varghese", section: SECTIONS.vehicle, page: "p-vehicle-2" },
   ]),
 
   // ===== Interior (1 page, 6 items) =====
