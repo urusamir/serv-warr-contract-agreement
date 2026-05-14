@@ -34,48 +34,49 @@ const Report = () => {
   const [direction, setDirection] = useState(1);
   const [answers, setAnswers] = useState<Answers>({});
   const [submitting, setSubmitting] = useState(false);
-  const [vinStatus, setVinStatus] = useState<"idle" | "loading" | "found" | "not_found">("idle");
-  const [vinAutoFilled, setVinAutoFilled] = useState<ReadonlySet<string>>(new Set());
+  const [inquiryStatus, setInquiryStatus] = useState<"idle" | "loading" | "found" | "not_found">("idle");
+  const [inquiryAutoFilled, setInquiryAutoFilled] = useState<ReadonlySet<string>>(new Set());
 
   useEffect(() => {
-    const vin = (answers["vehicle.vin"] as string)?.trim();
-    if (!vin) {
-      setVinStatus("idle");
-      setVinAutoFilled(new Set());
+    const inquiryId = (answers["vehicle.inquiry_id"] as string)?.trim();
+    if (!inquiryId) {
+      setInquiryStatus("idle");
+      setInquiryAutoFilled(new Set());
       return;
     }
-    // Unlock previously locked fields while new lookup runs
-    setVinAutoFilled(new Set());
-    setVinStatus("loading");
+    setInquiryAutoFilled(new Set());
+    setInquiryStatus("loading");
     const timer = setTimeout(async () => {
       const { data } = await supabase
         .from("service_reports_vehicle_customers")
-        .select("car_detail,car_id,mileage,customer_name,customer_phone,customer_email")
-        .eq("vin_no", vin)
+        .select("vin_no,car_detail,car_id,no_plate,customer_name,customer_phone,customer_email,service_advisor")
+        .eq("inquiry_id", inquiryId)
         .maybeSingle();
       if (data) {
         const filled = new Set<string>();
         const patch: Answers = {};
         const map: [string, string][] = [
-          ["car_detail",     "vehicle.make_model"],
-          ["car_id",         "vehicle.registration_number"],
-          ["mileage",        "vehicle.service_type_mileage"],
-          ["customer_name",  "customer.name"],
-          ["customer_phone", "customer.contact"],
-          ["customer_email", "customer.email"],
+          ["vin_no",          "vehicle.vin"],
+          ["car_detail",      "vehicle.make_model"],
+          ["car_id",          "vehicle.registration_number"],
+          ["no_plate",        "vehicle.no_plate"],
+          ["customer_name",   "customer.name"],
+          ["customer_phone",  "customer.contact"],
+          ["customer_email",  "customer.email"],
+          ["service_advisor", "service_advisor.name"],
         ];
         for (const [col, key] of map) {
           if (data[col]) { patch[key] = data[col]; filled.add(key); }
         }
         setAnswers(prev => ({ ...prev, ...patch }));
-        setVinAutoFilled(filled);
-        setVinStatus("found");
+        setInquiryAutoFilled(filled);
+        setInquiryStatus("found");
       } else {
-        setVinStatus("not_found");
+        setInquiryStatus("not_found");
       }
     }, 600);
     return () => clearTimeout(timer);
-  }, [answers["vehicle.vin"]]);
+  }, [answers["vehicle.inquiry_id"]]);
 
   const total = steps.length;
   const step = steps[index];
@@ -130,12 +131,10 @@ const Report = () => {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [index]);
 
-  // Block forward navigation past service-type until a tier is chosen,
-  // and past vehicle details until VIN is filled.
   const canAdvance = useCallback(() => {
     if (step.kind === "service-type") return !!tier;
     if (step.kind === "page" && step.id === "p-vehicle-1") {
-      return !!(answers["vehicle.vin"] as string)?.trim();
+      return !!(answers["vehicle.inquiry_id"] as string)?.trim();
     }
     return true;
   }, [step, tier, answers]);
@@ -143,7 +142,7 @@ const Report = () => {
   const tryGoNext = useCallback(() => {
     if (!canAdvance()) {
       if (step.kind === "service-type") toast.error("Please select a service type to continue.");
-      else toast.error("VIN is required. Please enter the vehicle VIN to continue.");
+      else toast.error("Inquiry ID is required. Please enter the Inquiry ID to continue.");
       return;
     }
     goNext();
@@ -211,8 +210,8 @@ const Report = () => {
                 onSubmit={submit}
                 submitting={submitting}
                 onJumpTo={jumpToField}
-                vinStatus={vinStatus}
-                vinAutoFilled={vinAutoFilled}
+                inquiryStatus={inquiryStatus}
+                inquiryAutoFilled={inquiryAutoFilled}
               />
             </motion.div>
           </AnimatePresence>
@@ -278,8 +277,8 @@ function StepView({
   onSubmit,
   submitting,
   onJumpTo,
-  vinStatus,
-  vinAutoFilled,
+  inquiryStatus,
+  inquiryAutoFilled,
 }: {
   step: Step;
   tier: ServiceTier | undefined;
@@ -289,8 +288,8 @@ function StepView({
   onSubmit: () => void;
   submitting: boolean;
   onJumpTo: (id: string) => void;
-  vinStatus: "idle" | "loading" | "found" | "not_found";
-  vinAutoFilled: ReadonlySet<string>;
+  inquiryStatus: "idle" | "loading" | "found" | "not_found";
+  inquiryAutoFilled: ReadonlySet<string>;
 }) {
   if (step.kind === "service-type") {
     return (
@@ -338,23 +337,23 @@ function StepView({
             autoFocus={i === 0}
             value={answers[f.id]}
             onChange={(v) => setAnswer(f.id, v)}
-            readOnly={vinAutoFilled.has(f.id)}
+            readOnly={inquiryAutoFilled.has(f.id)}
           />
         ))}
       </div>
 
-      {step.id === "p-vehicle-1" && vinStatus !== "idle" && (
+      {step.id === "p-vehicle-1" && inquiryStatus !== "idle" && (
         <div className={cn(
           "mt-6 flex items-center gap-2 text-sm rounded-md px-4 py-2.5",
-          vinStatus === "loading"   && "text-muted-foreground bg-muted",
-          vinStatus === "found"     && "text-green-700 bg-green-50 dark:text-green-400 dark:bg-green-950",
-          vinStatus === "not_found" && "text-muted-foreground bg-muted",
+          inquiryStatus === "loading"   && "text-muted-foreground bg-muted",
+          inquiryStatus === "found"     && "text-green-700 bg-green-50 dark:text-green-400 dark:bg-green-950",
+          inquiryStatus === "not_found" && "text-muted-foreground bg-muted",
         )}>
-          {vinStatus === "loading"   && <Loader2 className="h-4 w-4 animate-spin" />}
-          {vinStatus === "found"     && <Check className="h-4 w-4" />}
-          {vinStatus === "loading"   && "Looking up VIN…"}
-          {vinStatus === "found"     && "Details loaded from Kavak database — fields are locked"}
-          {vinStatus === "not_found" && "VIN not found — fill in details manually"}
+          {inquiryStatus === "loading"   && <Loader2 className="h-4 w-4 animate-spin" />}
+          {inquiryStatus === "found"     && <Check className="h-4 w-4" />}
+          {inquiryStatus === "loading"   && "Looking up Inquiry ID…"}
+          {inquiryStatus === "found"     && "Details loaded from Kavak database — fields are locked"}
+          {inquiryStatus === "not_found" && "Inquiry ID not found — fill in details manually"}
         </div>
       )}
 
@@ -490,8 +489,8 @@ function FieldInput({
 }) {
   switch (field.kind) {
     case "text":
-      if (field.id === "vehicle.vin") {
-        return <VinAutocompleteField value={value ?? ""} onChange={onChange} autoFocus={autoFocus} />;
+      if (field.id === "vehicle.inquiry_id") {
+        return <InquiryIdAutocompleteField value={value ?? ""} onChange={onChange} autoFocus={autoFocus} />;
       }
       return <TextField value={value ?? ""} onChange={onChange} placeholder={field.placeholder} suffix={field.suffix} autoFocus={autoFocus} readOnly={readOnly} />;
     case "longtext":
@@ -816,7 +815,7 @@ function ReviewView({
   );
 }
 
-function VinAutocompleteField({
+function InquiryIdAutocompleteField({
   value, onChange, autoFocus,
 }: { value: string; onChange: (v: string) => void; autoFocus?: boolean }) {
   const [inputValue, setInputValue] = useState(value);
@@ -831,27 +830,27 @@ function VinAutocompleteField({
 
   useEffect(() => {
     const trimmed = inputValue.trim();
-    if (trimmed.length < 6) { setSuggestions([]); setOpen(false); return; }
+    if (trimmed.length < 3) { setSuggestions([]); setOpen(false); return; }
     setSearching(true);
     const timer = setTimeout(async () => {
       const { data } = await supabase
         .from("service_reports_vehicle_customers")
-        .select("vin_no")
-        .ilike("vin_no", `%${trimmed}`)
+        .select("inquiry_id")
+        .ilike("inquiry_id", `%${trimmed}%`)
         .limit(10);
-      const vins = (data ?? []).map((r: any) => r.vin_no as string).filter(Boolean);
-      setSuggestions(vins);
-      setOpen(vins.length > 0);
+      const ids = (data ?? []).map((r: any) => r.inquiry_id as string).filter(Boolean);
+      setSuggestions(ids);
+      setOpen(ids.length > 0);
       setSearching(false);
     }, 300);
     return () => clearTimeout(timer);
   }, [inputValue]);
 
-  const select = (vin: string) => {
-    setInputValue(vin);
+  const select = (id: string) => {
+    setInputValue(id);
     setSuggestions([]);
     setOpen(false);
-    onChange(vin);
+    onChange(id);
   };
 
   const handleBlur = (e: React.FocusEvent) => {
@@ -869,7 +868,7 @@ function VinAutocompleteField({
           className="flex-1 bg-transparent outline-none"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          placeholder="Type last 6 digits of VIN…"
+          placeholder="Type Inquiry ID…"
           onKeyDown={(e) => {
             if (e.key === "Escape") setOpen(false);
             if (e.key === "Enter" && suggestions.length === 1) { e.preventDefault(); select(suggestions[0]); }
@@ -879,14 +878,14 @@ function VinAutocompleteField({
       </div>
       {open && (
         <ul className="absolute left-0 right-0 top-full mt-1 z-50 bg-background border border-border rounded-md shadow-lg overflow-hidden">
-          {suggestions.map((vin) => (
-            <li key={vin}>
+          {suggestions.map((id) => (
+            <li key={id}>
               <button
                 type="button"
                 className="w-full text-left px-4 py-2.5 text-sm font-mono hover:bg-muted transition"
-                onMouseDown={(e) => { e.preventDefault(); select(vin); }}
+                onMouseDown={(e) => { e.preventDefault(); select(id); }}
               >
-                {vin}
+                {id}
               </button>
             </li>
           ))}

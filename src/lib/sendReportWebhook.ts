@@ -5,10 +5,10 @@ import { SERVICE_TIER_LABEL, type ServiceTier } from "./reportSchema";
 type Answers = Record<string, any>;
 
 const ADVISOR_EMAILS: Record<string, string> = {
-  Jino:    "jino.varghese@kavak.com",
-  Hassan:  "hassan.ishaque@kavak.com",
-  Yaseen:  "yaseen.ustad@kavak.com",
-  Salman:  "salman.alblooshi@kavak.com",
+  "Jino Varghese":    "jino.varghese@kavak.com",
+  "Hassan Ishaque":   "hassan.ishaque@kavak.com",
+  "Yaseen Ustad":     "yaseen.ustad@kavak.com",
+  "Salman Alblooshi": "salman.alblooshi@kavak.com",
 };
 
 const WEBHOOK_URL = "https://kavakgccdev.app.n8n.cloud/webhook/service-report";
