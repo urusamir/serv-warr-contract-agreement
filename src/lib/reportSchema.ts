@@ -118,7 +118,7 @@ export const steps: Step[] = [
     { kind: "text", id: "vehicle.make_model", label: "Vehicle make & model", placeholder: "e.g. Toyota Corolla", section: SECTIONS.vehicle, page: "p-vehicle-1" },
     { kind: "text", id: "vehicle.registration_number", label: "Car ID", placeholder: "e.g. AB/12345", section: SECTIONS.vehicle, page: "p-vehicle-1" },
     { kind: "text", id: "vehicle.no_plate", label: "Number plate", placeholder: "e.g. B 12345", section: SECTIONS.vehicle, page: "p-vehicle-1" },
-    { kind: "text", id: "vehicle.vin", label: "VIN", placeholder: "Auto-filled", section: SECTIONS.vehicle, page: "p-vehicle-1" },
+    { kind: "text", id: "vehicle.vin", label: "VIN", placeholder: "e.g. JTDBR32E380123456", section: SECTIONS.vehicle, page: "p-vehicle-1" },
     { kind: "text", id: "vehicle.service_type_mileage", label: "Mileage", placeholder: "e.g. 30,000", suffix: "KM", section: SECTIONS.vehicle, page: "p-vehicle-1" },
   ]),
   page("p-vehicle-2", SECTIONS.vehicle, "Customer & advisor", [

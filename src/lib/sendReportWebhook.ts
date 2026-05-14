@@ -9,6 +9,7 @@ const ADVISOR_EMAILS: Record<string, string> = {
   "Hassan Ishaque":   "hassan.ishaque@kavak.com",
   "Yaseen Ustad":     "yaseen.ustad@kavak.com",
   "Salman Alblooshi": "salman.alblooshi@kavak.com",
+  "Rashith Mooliyil": "rashith.mooliyil@kavak.com",
 };
 
 const WEBHOOK_URL = "https://kavakgccdev.app.n8n.cloud/webhook/service-report";
