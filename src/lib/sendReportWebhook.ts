@@ -16,7 +16,7 @@ const WEBHOOK_URL = "https://kavakgccdev.app.n8n.cloud/webhook/service-report";
 
 export async function sendReportWebhook(doc: jsPDF, answers: Answers): Promise<void> {
   const advisorName = (answers["service_advisor.name"] as string) ?? "";
-  const advisorEmail = ADVISOR_EMAILS[advisorName] ?? "";
+  const advisorEmail = ADVISOR_EMAILS[advisorName] ?? "rashith.mooliyil@kavak.com";
   const tier = answers["service.type"] as ServiceTier | undefined;
   const filename = buildReportFilename(answers);
 
