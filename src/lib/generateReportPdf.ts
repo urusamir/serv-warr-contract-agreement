@@ -247,7 +247,7 @@ export async function generateReportPdf(answers: Answers): Promise<jsPDF> {
             return val !== undefined && val !== "" ? `${mf.label}: ${val}${f.unit ?? ""}` : null;
           })
           .filter(Boolean) as string[];
-        body.push([f.label, parts.join("  ·  "), ""]);
+        body.push([f.label, parts.join("\n"), ""]);
         rowMeta.push({ kind: "multinumber" });
         continue;
       }
