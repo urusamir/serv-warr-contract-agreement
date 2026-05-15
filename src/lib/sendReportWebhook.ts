@@ -22,6 +22,7 @@ export async function sendReportWebhook(doc: jsPDF, answers: Answers): Promise<v
 
   const formData = new FormData();
   formData.append("pdf", doc.output("blob"), filename);
+  formData.append("inquiry_id",         answers["vehicle.inquiry_id"] ?? "");
   formData.append("advisor_name",       advisorName);
   formData.append("advisor_email",      advisorEmail);
   formData.append("customer_name",      answers["customer.name"]      ?? "");
