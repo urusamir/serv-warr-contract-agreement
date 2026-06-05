@@ -60,8 +60,7 @@ export const steps: Step[] = [
     title: "Vehicle details",
     fields: [
       { kind: "text", id: "vehicle.vin", label: "VIN", placeholder: "e.g. W1NFB5KB9LA176147" },
-      { kind: "text", id: "vehicle.make", label: "Vehicle Make", placeholder: "e.g. Mercedes Benz" },
-      { kind: "text", id: "vehicle.model", label: "Vehicle Model", placeholder: "e.g. GLE 450 3.0L 6Cyl 362hp" },
+      { kind: "text", id: "vehicle.car", label: "Vehicle", placeholder: "e.g. 2021 Suzuki Jimny 1.5L 4Cyl 102hp GL" },
     ],
   },
 

@@ -179,11 +179,11 @@ export async function generateContractPdf(answers: Answers): Promise<jsPDF> {
       ],
       [
         `Mail ID: ${v(answers, "customer.email")}`,
-        `Vehicle Make: ${v(answers, "vehicle.make")}`,
+        `Vehicle: ${v(answers, "vehicle.car")}`,
       ],
       [
         `Mobile no: ${v(answers, "customer.mobile")}`,
-        `Vehicle Model: ${v(answers, "vehicle.model")}`,
+        ``,
       ],
     ],
     theme: "grid",

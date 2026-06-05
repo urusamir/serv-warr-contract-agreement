@@ -65,8 +65,7 @@ const Report = () => {
         "customer.mobile": data.customer_phone ?? prev["customer.mobile"] ?? "",
         "customer.email": data.customer_email ?? prev["customer.email"] ?? "",
         "vehicle.vin": data.vin_no ?? prev["vehicle.vin"] ?? "",
-        "vehicle.make": parts[0] || prev["vehicle.make"] || "",
-        "vehicle.model": parts.slice(1).join(" ") || prev["vehicle.model"] || "",
+        "vehicle.car": data.car_detail || prev["vehicle.car"] || "",
       }));
     }, 600);
     return () => clearTimeout(timer);
