@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Search, X, FileText, Download, Eye, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { Search, X, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import NavBar from "@/components/NavBar";
 import { supabase } from "@/lib/supabase";
 
@@ -15,7 +15,6 @@ type Report = {
   customer_contact: string | null;
   service_advisor: string | null;
   payload: Record<string, any>;
-  pdf_storage_path: string | null;
 };
 
 const SERVICE_TYPE_LABEL: Record<string, string> = {
@@ -122,33 +121,6 @@ function EntryModal({ report, onClose }: { report: Report; onClose: () => void }
   );
 }
 
-function PdfModal({ report, signedUrl, onClose }: { report: Report; signedUrl: string; onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
-      <div className="bg-zinc-900 border border-white/10 rounded-2xl w-full max-w-4xl h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 shrink-0">
-          <div>
-            <p className="font-bold text-white">{report.vin || "—"}</p>
-            <p className="text-sm text-white/50">{report.registration_number} · {formatDate(report.submitted_at)}</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <a href={signedUrl} download className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white text-sm font-semibold px-4 py-2 rounded-full transition-colors">
-              <Download className="h-4 w-4" />
-              Download
-            </a>
-            <button onClick={onClose} className="text-white/50 hover:text-white transition-colors">
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
-        <div className="flex-1 p-4">
-          <iframe src={signedUrl} className="w-full h-full rounded-lg" title="PDF Preview" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function EntriesTab({ reports, onDelete }: { reports: Report[]; onDelete: (id: string) => void }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -221,71 +193,10 @@ function EntriesTab({ reports, onDelete }: { reports: Report[]; onDelete: (id: s
   );
 }
 
-function PdfsTab({ reports, onDelete }: { reports: Report[]; onDelete: (id: string) => void }) {
-  const [previewState, setPreviewState] = useState<{ report: Report; url: string } | null>(null);
-  const [loadingId, setLoadingId] = useState<string | null>(null);
-  const [confirmId, setConfirmId] = useState<string | null>(null);
-  const confirming = reports.find((r) => r.id === confirmId) ?? null;
-
-  async function openPreview(report: Report) {
-    if (!report.pdf_storage_path) return;
-    setLoadingId(report.id);
-    const { data, error } = await supabase.storage.from("service-report-pdfs").createSignedUrl(report.pdf_storage_path, 3600);
-    setLoadingId(null);
-    if (error || !data?.signedUrl) return;
-    setPreviewState({ report, url: data.signedUrl });
-  }
-
-  return (
-    <>
-      {previewState && <PdfModal report={previewState.report} signedUrl={previewState.url} onClose={() => setPreviewState(null)} />}
-      {confirming && (
-        <ConfirmModal
-          message={`${confirming.vin || confirming.registration_number || "This report"} will be permanently deleted.`}
-          onConfirm={() => { setConfirmId(null); onDelete(confirming.id); }}
-          onCancel={() => setConfirmId(null)}
-        />
-      )}
-      <div className="space-y-2">
-        {reports.length === 0 && <p className="py-16 text-center text-white/30">No PDFs found</p>}
-        {reports.map((r) => (
-          <div key={r.id} className="flex items-center justify-between bg-white/5 hover:bg-white/8 rounded-xl px-5 py-4 transition-colors">
-            <div className="flex items-center gap-4">
-              <FileText className="h-8 w-8 text-white/20 shrink-0" />
-              <div>
-                <p className="font-semibold text-white">{r.vin || "—"}</p>
-                <p className="text-sm text-white/50">{r.registration_number} · {formatDate(r.submitted_at)}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={() => openPreview(r)}
-                disabled={loadingId === r.id || !r.pdf_storage_path}
-                className="inline-flex items-center gap-2 bg-primary text-white text-sm font-semibold px-4 py-2 rounded-full hover:opacity-90 transition disabled:opacity-40"
-              >
-                <Eye className="h-4 w-4" />
-                {loadingId === r.id ? "Loading…" : "Preview"}
-              </button>
-              <button
-                onClick={() => setConfirmId(r.id)}
-                className="p-2 text-white/30 hover:text-red-400 transition-colors"
-                title="Delete report"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </>
-  );
-}
-
 const History = () => {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [tab, setTab] = useState<"entries" | "pdfs">("entries");
 
   useEffect(() => {
     const threeMonthsAgo = new Date();
@@ -303,12 +214,6 @@ const History = () => {
   }, []);
 
   async function handleDelete(id: string) {
-    const report = reports.find((r) => r.id === id);
-    if (!report) return;
-
-    if (report.pdf_storage_path) {
-      await supabase.storage.from("service-report-pdfs").remove([report.pdf_storage_path]);
-    }
     await supabase.from("service_reports").delete().eq("id", id);
     setReports((prev) => prev.filter((r) => r.id !== id));
   }
@@ -339,26 +244,10 @@ const History = () => {
           )}
         </div>
 
-        <div className="flex gap-1 bg-white/5 rounded-xl p-1 mb-6 w-fit">
-          {(["entries", "pdfs"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`px-5 py-2 rounded-lg text-sm font-semibold capitalize transition-colors ${
-                tab === t ? "bg-white text-black" : "text-white/50 hover:text-white"
-              }`}
-            >
-              {t === "entries" ? "Entries" : "PDFs"}
-            </button>
-          ))}
-        </div>
-
         {loading ? (
           <p className="text-white/30 text-sm">Loading…</p>
-        ) : tab === "entries" ? (
-          <EntriesTab reports={filtered} onDelete={handleDelete} />
         ) : (
-          <PdfsTab reports={filtered} onDelete={handleDelete} />
+          <EntriesTab reports={filtered} onDelete={handleDelete} />
         )}
       </div>
     </main>
