@@ -53,7 +53,7 @@ const Report = () => {
     if (!carId) return;
     const timer = setTimeout(async () => {
       const { data } = await supabase
-        .from("Serv/Warr Agreement - Customers")
+        .from("serv_warr_customers")
         .select("customer_name, customer_phone, customer_email, vin_no, car_detail")
         .eq("car_id", carId)
         .maybeSingle();
