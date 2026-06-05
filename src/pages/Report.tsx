@@ -26,6 +26,7 @@ const Report = () => {
   const [contractType, setContractType] = useState<ContractType | undefined>();
   const [answers, setAnswers] = useState<Answers>({
     "agreement.date": new Date().toISOString().slice(0, 10),
+    "contract.from_date": new Date().toISOString().slice(0, 10),
   });
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [tcOpen, setTcOpen] = useState(false);
@@ -70,6 +71,23 @@ const Report = () => {
     }, 600);
     return () => clearTimeout(timer);
   }, [answers["agreement.car_id"]]);
+
+  useEffect(() => {
+    const pkg = answers["contract.package"];
+    const fromKm = Number(answers["contract.from_km"] ?? 0);
+    if (!pkg) return;
+    const parts = pkg.split("-"); // ["UC","SC","1YR","10KM"]
+    const years = parseInt(parts[2]);
+    const kmToAdd = parseInt(parts[3]) * 1000;
+    const fromDate = answers["contract.from_date"] ?? new Date().toISOString().slice(0, 10);
+    const endDate = new Date(fromDate);
+    endDate.setFullYear(endDate.getFullYear() + years);
+    setAnswers((prev) => ({
+      ...prev,
+      "contract.end_date": endDate.toISOString().slice(0, 10),
+      "contract.end_km": fromKm + kmToAdd,
+    }));
+  }, [answers["contract.package"], answers["contract.from_km"]]);
 
   const canAdvance = useCallback((): boolean => {
     if (step.kind === "contract-type") return !!contractType && contractType === "service";
@@ -414,7 +432,7 @@ function FieldInput({
         />
       );
     case "date": {
-      const locked = field.id === "agreement.date";
+      const locked = ["agreement.date", "contract.from_date", "contract.end_date"].includes(field.id);
       return (
         <input
           ref={inputRef as React.RefObject<HTMLInputElement>}
@@ -427,19 +445,22 @@ function FieldInput({
         />
       );
     }
-    case "number":
+    case "number": {
+      const locked = field.id === "contract.end_km";
       return (
         <input
           ref={inputRef as React.RefObject<HTMLInputElement>}
           type="number"
           inputMode="numeric"
-          className={cn(baseInput, "max-w-xs")}
+          className={cn(baseInput, "max-w-xs", locked && "opacity-50 cursor-not-allowed")}
           value={value ?? ""}
-          onChange={(e) => onChange(e.target.value === "" ? "" : Number(e.target.value))}
+          onChange={(e) => { if (!locked) onChange(e.target.value === "" ? "" : Number(e.target.value)); }}
           placeholder="0"
-          autoFocus={autoFocus}
+          autoFocus={autoFocus && !locked}
+          readOnly={locked}
         />
       );
+    }
     case "select":
       return (
         <div className="grid gap-2 max-w-sm mt-1">
