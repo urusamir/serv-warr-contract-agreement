@@ -313,7 +313,7 @@ export async function generateContractPdf(answers: Answers, contractType: "servi
 
   // ----- Signature section -----
   const staffName = v(answers, "signature.staff_name", "");
-  const customerName = v(answers, "signature.customer_name", "");
+  const customerName = v(answers, "customer.name", "");
   const staffSig: string = answers["signature.staff"] ?? "";
   const customerSig: string = answers["signature.customer"] ?? "";
   const stampDataUrl: string = answers["signature.stamp"] ?? "";
