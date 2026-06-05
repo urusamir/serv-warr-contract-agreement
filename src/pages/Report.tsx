@@ -625,7 +625,7 @@ function SignatureView({
               type="text"
               className="w-full border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition-colors"
               placeholder="Enter customer name"
-              value={answers["signature.customer_name"] ?? ""}
+              value={answers["signature.customer_name"] ?? answers["customer.name"] ?? ""}
               onChange={(e) => setAnswer("signature.customer_name", e.target.value)}
             />
           </div>
