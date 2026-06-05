@@ -126,7 +126,30 @@ const Report = () => {
   const submit = useCallback(async () => {
     setSubmitting(true);
     try {
-      const doc = await generateContractPdf(answers, contractType ?? "service");
+      const webhookPayload = {
+        vehicle_details: answers["vehicle.car"] ?? "",
+        vin_no: answers["vehicle.vin"] ?? "",
+        customer_name: answers["customer.name"] ?? "",
+        customer_email: answers["customer.email"] ?? "",
+        customer_phone: answers["customer.mobile"] ?? "",
+        from_km: answers["contract.from_km"] ?? "",
+        end_km: answers["contract.end_km"] ?? "",
+        from_date: answers["contract.from_date"] ?? "",
+        end_date: answers["contract.end_date"] ?? "",
+        contract_type: contractType ?? "service",
+        package_type: answers["contract.package"] ?? "",
+        staff_name: answers["signature.staff_name"] ?? "",
+      };
+
+      const [doc] = await Promise.all([
+        generateContractPdf(answers, contractType ?? "service"),
+        fetch("https://kavakgccdev.app.n8n.cloud/webhook/serv-warr-contract", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(webhookPayload),
+        }).catch((err) => console.error("Webhook error:", err)),
+      ]);
+
       saveContractPdf(doc, answers);
       toast.success("Agreement submitted and downloaded.");
       navigate("/report/done");
@@ -136,7 +159,7 @@ const Report = () => {
     } finally {
       setSubmitting(false);
     }
-  }, [answers, navigate]);
+  }, [answers, contractType, navigate]);
 
   return (
     <main className="min-h-screen w-full bg-background text-foreground flex flex-col">
