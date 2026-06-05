@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check, ChevronRight, ExternalLink, FileText, Loader2, Upload } from "lucide-react";
 import logoBlack from "@/assets/kavak-logo-black.png";
-import { steps, type ContractType, type FieldDef, SERVICE_INTERVALS } from "@/lib/contractSchema";
+import { steps, type ContractType, type FieldDef } from "@/lib/contractSchema";
 import { generateContractPdf, saveContractPdf } from "@/lib/generateContractPdf";
 import { SignaturePad } from "@/components/SignaturePad";
 import { TCModal } from "@/components/TCModal";
@@ -23,7 +23,9 @@ const Report = () => {
   const [index, setIndex] = useState(0);
   const [direction, setDirection] = useState(1);
   const [contractType, setContractType] = useState<ContractType | undefined>();
-  const [answers, setAnswers] = useState<Answers>({});
+  const [answers, setAnswers] = useState<Answers>({
+    "agreement.date": new Date().toISOString().slice(0, 10),
+  });
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [tcOpen, setTcOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -384,17 +386,20 @@ function FieldInput({
           autoFocus={autoFocus}
         />
       );
-    case "date":
+    case "date": {
+      const locked = field.id === "agreement.date";
       return (
         <input
           ref={inputRef as React.RefObject<HTMLInputElement>}
           type="date"
-          className={cn(baseInput, "max-w-xs")}
+          className={cn(baseInput, "max-w-xs", locked && "opacity-50 cursor-not-allowed")}
           value={value ?? ""}
-          onChange={(e) => onChange(e.target.value)}
-          autoFocus={autoFocus}
+          onChange={(e) => { if (!locked) onChange(e.target.value); }}
+          readOnly={locked}
+          autoFocus={autoFocus && !locked}
         />
       );
+    }
     case "number":
       return (
         <input
