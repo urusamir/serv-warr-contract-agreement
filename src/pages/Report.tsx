@@ -326,7 +326,7 @@ function ContractTypeView({
       <div className="mt-10">
         <button
           onClick={onNext}
-          disabled={!value || value === "warranty"}
+          disabled={!value}
           className="inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-md px-6 py-3 font-semibold hover:opacity-90 transition disabled:opacity-40"
         >
           Continue
