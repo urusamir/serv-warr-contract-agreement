@@ -175,11 +175,7 @@ export async function generateContractPdf(answers: Answers): Promise<jsPDF> {
     body: [
       [
         `Name: ${v(answers, "customer.name")}`,
-        `Chassis #: ${v(answers, "vehicle.chassis")}`,
-      ],
-      [
-        `Address: ${v(answers, "customer.address")}`,
-        `Registration #: ${v(answers, "vehicle.registration")}`,
+        `VIN: ${v(answers, "vehicle.vin")}`,
       ],
       [
         `Mail ID: ${v(answers, "customer.email")}`,

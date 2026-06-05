@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check, ChevronRight, ExternalLink, FileText, Loader2, Upload } from "lucide-react";
@@ -9,6 +9,7 @@ import { SignaturePad } from "@/components/SignaturePad";
 import { TCModal } from "@/components/TCModal";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
 
 type Answers = Record<string, any>;
 
@@ -47,13 +48,39 @@ const Report = () => {
     setIndex((i) => Math.max(i - 1, 0));
   }, []);
 
+  useEffect(() => {
+    const carId = (answers["agreement.car_id"] ?? "").trim();
+    if (!carId) return;
+    const timer = setTimeout(async () => {
+      const { data } = await supabase
+        .from("Serv/Warr Agreement - Customers")
+        .select("customer_name, customer_phone, customer_email, vin_no, car_detail")
+        .eq("car_id", carId)
+        .maybeSingle();
+      if (!data) return;
+      const parts = (data.car_detail ?? "").split(" ");
+      setAnswers((prev) => ({
+        ...prev,
+        "customer.name": data.customer_name ?? prev["customer.name"] ?? "",
+        "customer.mobile": data.customer_phone ?? prev["customer.mobile"] ?? "",
+        "customer.email": data.customer_email ?? prev["customer.email"] ?? "",
+        "vehicle.vin": data.vin_no ?? prev["vehicle.vin"] ?? "",
+        "vehicle.make": parts[0] || prev["vehicle.make"] || "",
+        "vehicle.model": parts.slice(1).join(" ") || prev["vehicle.model"] || "",
+      }));
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [answers["agreement.car_id"]]);
+
   const canAdvance = useCallback((): boolean => {
     if (step.kind === "contract-type") return !!contractType && contractType === "service";
     if (step.kind === "page") {
-      return step.fields.every((f) => {
-        const val = answers[f.id];
-        return val !== undefined && val !== null && String(val).trim() !== "";
-      });
+      return step.fields
+        .filter((f) => f.required)
+        .every((f) => {
+          const val = answers[f.id];
+          return val !== undefined && val !== null && String(val).trim() !== "";
+        });
     }
     if (step.kind === "terms") return termsAgreed;
     return true;
@@ -348,6 +375,7 @@ function FieldRow({
     <div>
       <label className="block text-base md:text-lg font-semibold text-foreground mb-2">
         {field.label}
+        {field.required && <span className="text-red-500 ml-0.5">*</span>}
         {field.kind === "number" && field.unit && (
           <span className="ml-2 text-sm font-normal text-muted-foreground">({field.unit})</span>
         )}

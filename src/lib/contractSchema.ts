@@ -1,10 +1,10 @@
 export type ContractType = "service" | "warranty";
 
 export type FieldDef =
-  | { kind: "text"; id: string; label: string; placeholder?: string }
-  | { kind: "date"; id: string; label: string }
-  | { kind: "number"; id: string; label: string; unit?: string }
-  | { kind: "select"; id: string; label: string; options: string[] };
+  | { kind: "text"; id: string; label: string; placeholder?: string; required?: boolean }
+  | { kind: "date"; id: string; label: string; required?: boolean }
+  | { kind: "number"; id: string; label: string; unit?: string; required?: boolean }
+  | { kind: "select"; id: string; label: string; options: string[]; required?: boolean };
 
 export type Step =
   | { kind: "contract-type"; id: string }
@@ -37,7 +37,7 @@ export const steps: Step[] = [
     title: "Agreement details",
     fields: [
       { kind: "date", id: "agreement.date", label: "Agreement Date" },
-      { kind: "text", id: "agreement.car_id", label: "Car ID", placeholder: "e.g. DXB24942-S" },
+      { kind: "text", id: "agreement.car_id", label: "Car ID", placeholder: "e.g. DXB24942-S", required: true },
     ],
   },
 
@@ -48,7 +48,6 @@ export const steps: Step[] = [
     title: "Customer details",
     fields: [
       { kind: "text", id: "customer.name", label: "Full Name", placeholder: "e.g. John Doe" },
-      { kind: "text", id: "customer.address", label: "Address", placeholder: "e.g. Dubai" },
       { kind: "text", id: "customer.email", label: "Email Address", placeholder: "e.g. john@example.com" },
       { kind: "text", id: "customer.mobile", label: "Mobile Number", placeholder: "e.g. 971501234567" },
     ],
@@ -60,9 +59,8 @@ export const steps: Step[] = [
     section: "Vehicle Details",
     title: "Vehicle details",
     fields: [
-      { kind: "text", id: "vehicle.chassis", label: "Chassis #", placeholder: "e.g. W1NFB5KB9LA176147" },
-      { kind: "text", id: "vehicle.registration", label: "Registration #", placeholder: "e.g. DXB24942-S" },
-      { kind: "text", id: "vehicle.make", label: "Vehicle Make", placeholder: "e.g. 2020 Mercedes Benz" },
+      { kind: "text", id: "vehicle.vin", label: "VIN", placeholder: "e.g. W1NFB5KB9LA176147" },
+      { kind: "text", id: "vehicle.make", label: "Vehicle Make", placeholder: "e.g. Mercedes Benz" },
       { kind: "text", id: "vehicle.model", label: "Vehicle Model", placeholder: "e.g. GLE 450 3.0L 6Cyl 362hp" },
     ],
   },
