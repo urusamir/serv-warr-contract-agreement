@@ -1,10 +1,10 @@
 export type ContractType = "service" | "warranty";
 
 export type FieldDef =
-  | { kind: "text"; id: string; label: string; placeholder?: string; required?: boolean }
-  | { kind: "date"; id: string; label: string; required?: boolean }
-  | { kind: "number"; id: string; label: string; unit?: string; required?: boolean }
-  | { kind: "select"; id: string; label: string; options: string[]; required?: boolean };
+  | { kind: "text"; id: string; label: string; placeholder?: string; required?: boolean; locked?: boolean }
+  | { kind: "date"; id: string; label: string; required?: boolean; locked?: boolean }
+  | { kind: "number"; id: string; label: string; unit?: string; required?: boolean; locked?: boolean }
+  | { kind: "select"; id: string; label: string; options: string[]; required?: boolean; locked?: boolean };
 
 export type Step =
   | { kind: "contract-type"; id: string }
@@ -52,9 +52,9 @@ export const steps: Step[] = [
     section: "Customer Details",
     title: "Customer details",
     fields: [
-      { kind: "text", id: "customer.name", label: "Full Name", placeholder: "e.g. John Doe" },
-      { kind: "text", id: "customer.email", label: "Email Address", placeholder: "e.g. john@example.com" },
-      { kind: "text", id: "customer.mobile", label: "Mobile Number", placeholder: "e.g. 971501234567" },
+      { kind: "text", id: "customer.name", label: "Full Name", placeholder: "e.g. John Doe", locked: true },
+      { kind: "text", id: "customer.email", label: "Email Address", placeholder: "e.g. john@example.com", locked: true },
+      { kind: "text", id: "customer.mobile", label: "Mobile Number", placeholder: "e.g. 971501234567", locked: true },
     ],
   },
 
@@ -64,8 +64,8 @@ export const steps: Step[] = [
     section: "Vehicle Details",
     title: "Vehicle details",
     fields: [
-      { kind: "text", id: "vehicle.vin", label: "VIN", placeholder: "e.g. W1NFB5KB9LA176147" },
-      { kind: "text", id: "vehicle.car", label: "Vehicle", placeholder: "e.g. 2021 Suzuki Jimny 1.5L 4Cyl 102hp GL" },
+      { kind: "text", id: "vehicle.vin", label: "VIN", placeholder: "e.g. W1NFB5KB9LA176147", locked: true },
+      { kind: "text", id: "vehicle.car", label: "Vehicle", placeholder: "e.g. 2021 Suzuki Jimny 1.5L 4Cyl 102hp GL", locked: true },
     ],
   },
 

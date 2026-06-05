@@ -433,18 +433,21 @@ function FieldInput({
     "w-full bg-transparent border-0 border-b-2 border-border focus:border-primary focus:outline-none text-lg font-medium py-2 transition-colors placeholder:text-muted-foreground/50";
 
   switch (field.kind) {
-    case "text":
+    case "text": {
+      const locked = !!field.locked;
       return (
         <input
           ref={inputRef as React.RefObject<HTMLInputElement>}
           type="text"
-          className={baseInput}
+          className={cn(baseInput, locked && "opacity-50 cursor-not-allowed")}
           value={value ?? ""}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => { if (!locked) onChange(e.target.value); }}
           placeholder={field.placeholder ?? "Type your answer…"}
-          autoFocus={autoFocus}
+          autoFocus={autoFocus && !locked}
+          readOnly={locked}
         />
       );
+    }
     case "date": {
       const locked = ["agreement.date", "contract.from_date", "contract.end_date"].includes(field.id);
       return (
@@ -628,10 +631,9 @@ function SignatureView({
             <label className="block text-sm font-semibold mb-2">Customer Name</label>
             <input
               type="text"
-              className="w-full border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition-colors"
-              placeholder="Enter customer name"
+              className="w-full border border-border rounded-lg px-4 py-2.5 text-sm opacity-50 cursor-not-allowed"
               value={answers["signature.customer_name"] ?? answers["customer.name"] ?? ""}
-              onChange={(e) => setAnswer("signature.customer_name", e.target.value)}
+              readOnly
             />
           </div>
         </div>
