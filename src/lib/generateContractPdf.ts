@@ -98,7 +98,7 @@ This Agreement is governed by and shall be construed in accordance with the appl
 11. Miscellaneous.
 The Customer may not assign, transfer or delegate any of its rights or obligations under this Agreement without the prior written consent of Kavak. This Agreement embodies the entire Agreement between the parties relating to the subject matter hereof. This Agreement may be amended only by an agreement in writing signed by Kavak and the Customer.`;
 
-export async function generateContractPdf(answers: Answers): Promise<jsPDF> {
+export async function generateContractPdf(answers: Answers, contractType: "service" | "warranty" = "service"): Promise<jsPDF> {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 40;
@@ -127,11 +127,13 @@ export async function generateContractPdf(answers: Answers): Promise<jsPDF> {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
   doc.setTextColor(...BLACK);
-  doc.text("SERVICE CONTRACT AGREEMENT", pageWidth / 2, 46, { align: "center" });
+  const pdfTitle = contractType === "warranty" ? "WARRANTY CONTRACT AGREEMENT" : "SERVICE CONTRACT AGREEMENT";
+  const agreementLabel = contractType === "warranty" ? "THIS VEHICLE WARRANTY AGREEMENT" : "THIS VEHICLE SERVICE AGREEMENT";
+  doc.text(pdfTitle, pageWidth / 2, 46, { align: "center" });
 
   // Opening paragraph
   const agreementDate = formatDate(v(answers, "agreement.date", ""));
-  const openingText = `"THIS VEHICLE SERVICE AGREEMENT (this "Agreement") is made and entered into as of the ${agreementDate}, by and between KAVAK CAR SERVICE LLC, a company registered in Dubai under Commercial License No. 1185462, having its registered offices at 32, 17b Str., Al Quoz Industrial Area 2, Dubai, Telephone: 600-528251, email: customer.uae@kavak.com (hereinafter referred to as "KAVAK"); and"`;
+  const openingText = `"${agreementLabel} (this "Agreement") is made and entered into as of the ${agreementDate}, by and between KAVAK CAR SERVICE LLC, a company registered in Dubai under Commercial License No. 1185462, having its registered offices at 32, 17b Str., Al Quoz Industrial Area 2, Dubai, Telephone: 600-528251, email: customer.uae@kavak.com (hereinafter referred to as "KAVAK"); and"`;
 
   doc.setFont("helvetica", "italic");
   doc.setFontSize(8);

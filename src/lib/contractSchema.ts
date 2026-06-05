@@ -13,11 +13,16 @@ export type Step =
   | { kind: "signature"; id: string };
 
 export const SERVICE_PACKAGES = [
-  "UC-SC-1YR-10KM",
-  "UC-SC-1YR-20KM",
-  "UC-SC-2YR-20KM",
+  "OKM-SC-2YR-30KM",
   "UC-SC-2YR-30KM",
-  "UC-SC-3YR-30KM",
+  "UC-SC-1YR-20KM",
+];
+
+export const WARRANTY_PACKAGES = [
+  "Plus Warranty-12MNTS/30KM",
+  "Plus Warranty-24MNTS/60KM",
+  "Basic Warranty-12MNTS/30KM",
+  "Basic Warranty-24MNTS/60KM",
 ];
 
 export const SERVICE_INTERVALS = "6 months / 10,000 KM whichever comes first";

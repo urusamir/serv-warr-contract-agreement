@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Check, ChevronRight, ExternalLink, FileText, Loader2, Upload } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ChevronRight, ExternalLink, FileText, Loader2 } from "lucide-react";
 import logoBlack from "@/assets/kavak-logo-black.png";
-import { steps, type ContractType, type FieldDef } from "@/lib/contractSchema";
+import companyStamp from "@/assets/company-stamp.png";
+import { steps, WARRANTY_PACKAGES, SERVICE_PACKAGES, type ContractType, type FieldDef } from "@/lib/contractSchema";
 import { generateContractPdf, saveContractPdf } from "@/lib/generateContractPdf";
 import { SignaturePad } from "@/components/SignaturePad";
 import { TCModal } from "@/components/TCModal";
@@ -12,6 +13,16 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 
 type Answers = Record<string, any>;
+
+function parsePackage(pkg: string): { years: number; kmToAdd: number } | null {
+  // Service format: OKM-SC-2YR-30KM, UC-SC-1YR-20KM
+  const svc = pkg.match(/(\d+)YR[^/]*?(\d+)KM/);
+  if (svc) return { years: parseInt(svc[1]), kmToAdd: parseInt(svc[2]) * 1000 };
+  // Warranty format: Plus Warranty-12MNTS/30KM
+  const warr = pkg.match(/(\d+)MNTS\/(\d+)KM/);
+  if (warr) return { years: Math.round(parseInt(warr[1]) / 12), kmToAdd: parseInt(warr[2]) * 1000 };
+  return null;
+}
 
 const variants = {
   enter: (dir: number) => ({ y: dir > 0 ? 50 : -50, opacity: 0 }),
@@ -27,6 +38,7 @@ const Report = () => {
   const [answers, setAnswers] = useState<Answers>({
     "agreement.date": new Date().toISOString().slice(0, 10),
     "contract.from_date": new Date().toISOString().slice(0, 10),
+    "signature.stamp": companyStamp,
   });
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [tcOpen, setTcOpen] = useState(false);
@@ -76,9 +88,9 @@ const Report = () => {
     const pkg = answers["contract.package"];
     const fromKm = Number(answers["contract.from_km"] ?? 0);
     if (!pkg) return;
-    const parts = pkg.split("-"); // ["UC","SC","1YR","10KM"]
-    const years = parseInt(parts[2]);
-    const kmToAdd = parseInt(parts[3]) * 1000;
+    const parsed = parsePackage(pkg);
+    if (!parsed) return;
+    const { years, kmToAdd } = parsed;
     const fromDate = answers["contract.from_date"] ?? new Date().toISOString().slice(0, 10);
     const endDate = new Date(fromDate);
     endDate.setFullYear(endDate.getFullYear() + years);
@@ -90,7 +102,7 @@ const Report = () => {
   }, [answers["contract.package"], answers["contract.from_km"]]);
 
   const canAdvance = useCallback((): boolean => {
-    if (step.kind === "contract-type") return !!contractType && contractType === "service";
+    if (step.kind === "contract-type") return !!contractType;
     if (step.kind === "page") {
       return step.fields
         .filter((f) => f.required)
@@ -104,10 +116,6 @@ const Report = () => {
   }, [step, contractType, answers, termsAgreed]);
 
   const tryGoNext = useCallback(() => {
-    if (step.kind === "contract-type" && contractType === "warranty") {
-      toast.error("Warranty contract coming soon.");
-      return;
-    }
     if (!canAdvance()) {
       toast.error("Please fill in all required fields to continue.");
       return;
@@ -118,7 +126,7 @@ const Report = () => {
   const submit = useCallback(async () => {
     setSubmitting(true);
     try {
-      const doc = await generateContractPdf(answers);
+      const doc = await generateContractPdf(answers, contractType ?? "service");
       saveContractPdf(doc, answers);
       toast.success("Agreement submitted and downloaded.");
       navigate("/report/done");
@@ -162,7 +170,18 @@ const Report = () => {
               )}
               {step.kind === "page" && (
                 <PageView
-                  step={step}
+                  step={
+                    step.id === "p-contract-period"
+                      ? {
+                          ...step,
+                          fields: step.fields.map((f) =>
+                            f.id === "contract.package"
+                              ? { ...f, options: contractType === "warranty" ? WARRANTY_PACKAGES : SERVICE_PACKAGES }
+                              : f
+                          ),
+                        }
+                      : step
+                  }
                   answers={answers}
                   setAnswer={setAnswer}
                   onNext={tryGoNext}
@@ -249,7 +268,7 @@ function ContractTypeView({
       key: "warranty",
       label: "Warranty Contract",
       description: "Extended warranty coverage for mechanical components.",
-      available: false,
+      available: true,
     },
   ];
 
@@ -294,11 +313,6 @@ function ContractTypeView({
               <span className="flex-1">
                 <span className="block text-lg font-semibold">
                   {o.label}
-                  {!o.available && (
-                    <span className="ml-2 text-xs font-medium bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
-                      Coming soon
-                    </span>
-                  )}
                 </span>
                 <span className="block text-sm text-muted-foreground mt-0.5">
                   {o.description}
@@ -585,16 +599,7 @@ function SignatureView({
   onSubmit: () => void;
   submitting: boolean;
 }) {
-  const stampInputRef = useRef<HTMLInputElement>(null);
   const stampDataUrl: string = answers["signature.stamp"] ?? "";
-
-  const handleStampUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setAnswer("signature.stamp", reader.result as string);
-    reader.readAsDataURL(file);
-  };
 
   return (
     <div className="py-4">
@@ -649,41 +654,12 @@ function SignatureView({
           </div>
         </div>
 
-        {/* Company Stamp */}
+        {/* Company Stamp — locked, pre-filled */}
         <div>
           <label className="block text-sm font-semibold mb-2">Company Stamp</label>
-          <input
-            ref={stampInputRef}
-            type="file"
-            accept="image/*,.pdf"
-            className="hidden"
-            onChange={handleStampUpload}
-          />
-          {stampDataUrl ? (
-            <div className="relative border-2 border-border rounded-xl overflow-hidden bg-muted/30">
-              <img src={stampDataUrl} alt="Company stamp" className="w-full h-40 object-contain" />
-              <button
-                type="button"
-                onClick={() => {
-                  setAnswer("signature.stamp", "");
-                  if (stampInputRef.current) stampInputRef.current.value = "";
-                }}
-                className="absolute top-2 right-2 px-3 py-1.5 rounded-md bg-muted hover:bg-muted/80 text-muted-foreground text-xs font-medium transition"
-              >
-                Remove
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => stampInputRef.current?.click()}
-              className="w-full border-2 border-dashed border-border rounded-xl h-36 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors"
-            >
-              <Upload className="h-6 w-6" />
-              <span className="text-sm font-medium">Upload company stamp</span>
-              <span className="text-xs">JPG, PNG or PDF (max. 5MB)</span>
-            </button>
-          )}
+          <div className="border-2 border-border rounded-xl overflow-hidden bg-muted/30">
+            <img src={stampDataUrl} alt="Company stamp" className="w-full h-40 object-contain" />
+          </div>
         </div>
 
         {/* Submit */}
