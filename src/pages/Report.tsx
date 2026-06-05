@@ -132,10 +132,6 @@ const Report = () => {
       toast.error("Staff signature is required.");
       return;
     }
-    if (!answers["signature.customer"]) {
-      toast.error("Customer signature is required.");
-      return;
-    }
     setSubmitting(true);
     try {
       const webhookPayload = {
@@ -683,7 +679,7 @@ function SignatureView({
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold mb-2">Customer Signature <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-semibold mb-2">Customer Signature</label>
             <SignaturePad
               value={answers["signature.customer"] ?? ""}
               onChange={(v) => setAnswer("signature.customer", v)}
