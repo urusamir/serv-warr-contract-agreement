@@ -124,6 +124,18 @@ const Report = () => {
   }, [canAdvance, goNext, step, contractType]);
 
   const submit = useCallback(async () => {
+    if (!answers["signature.staff_name"]?.trim()) {
+      toast.error("Staff name is required.");
+      return;
+    }
+    if (!answers["signature.staff"]) {
+      toast.error("Staff signature is required.");
+      return;
+    }
+    if (!answers["signature.customer"]) {
+      toast.error("Customer signature is required.");
+      return;
+    }
     setSubmitting(true);
     try {
       const webhookPayload = {
@@ -641,7 +653,7 @@ function SignatureView({
         {/* Names */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-semibold mb-2">Staff Name</label>
+            <label className="block text-sm font-semibold mb-2">Staff Name <span className="text-red-500">*</span></label>
             <input
               type="text"
               className="w-full border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition-colors"
@@ -664,14 +676,14 @@ function SignatureView({
         {/* Signatures */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-semibold mb-2">Staff Signature</label>
+            <label className="block text-sm font-semibold mb-2">Staff Signature <span className="text-red-500">*</span></label>
             <SignaturePad
               value={answers["signature.staff"] ?? ""}
               onChange={(v) => setAnswer("signature.staff", v)}
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold mb-2">Customer Signature</label>
+            <label className="block text-sm font-semibold mb-2">Customer Signature <span className="text-red-500">*</span></label>
             <SignaturePad
               value={answers["signature.customer"] ?? ""}
               onChange={(v) => setAnswer("signature.customer", v)}

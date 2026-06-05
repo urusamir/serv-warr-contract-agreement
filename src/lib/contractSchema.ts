@@ -76,10 +76,10 @@ export const steps: Step[] = [
     title: "Contract period",
     fields: [
       { kind: "date", id: "contract.from_date", label: "From Date" },
-      { kind: "number", id: "contract.from_km", label: "From KM", unit: "km" },
+      { kind: "number", id: "contract.from_km", label: "From KM", unit: "km", required: true },
       { kind: "date", id: "contract.end_date", label: "End Date" },
       { kind: "number", id: "contract.end_km", label: "End KM", unit: "km" },
-      { kind: "select", id: "contract.package", label: "Package", options: SERVICE_PACKAGES },
+      { kind: "select", id: "contract.package", label: "Package", options: SERVICE_PACKAGES, required: true },
     ],
   },
 
