@@ -88,7 +88,8 @@ const Report = () => {
     const pkg = answers["contract.package"];
     const fromKm = Number(answers["contract.from_km"] ?? 0);
     if (!pkg) return;
-    const parsed = parsePackage(pkg);
+    const effectivePkg = pkg === "Custom Package" ? (answers["contract.custom_package"] ?? "") : pkg;
+    const parsed = parsePackage(effectivePkg);
     if (!parsed) return;
     const { years, kmToAdd } = parsed;
     const fromDate = answers["contract.from_date"] ?? new Date().toISOString().slice(0, 10);
@@ -99,17 +100,22 @@ const Report = () => {
       "contract.end_date": endDate.toISOString().slice(0, 10),
       "contract.end_km": fromKm + kmToAdd,
     }));
-  }, [answers["contract.package"], answers["contract.from_km"]]);
+  }, [answers["contract.package"], answers["contract.from_km"], answers["contract.custom_package"]]);
 
   const canAdvance = useCallback((): boolean => {
     if (step.kind === "contract-type") return !!contractType;
     if (step.kind === "page") {
-      return step.fields
+      const ok = step.fields
         .filter((f) => f.required)
         .every((f) => {
           const val = answers[f.id];
           return val !== undefined && val !== null && String(val).trim() !== "";
         });
+      if (!ok) return false;
+      if (step.id === "p-contract-period" && answers["contract.package"] === "Custom Package") {
+        return !!(answers["contract.custom_package"]?.trim());
+      }
+      return true;
     }
     if (step.kind === "terms") return termsAgreed;
     return true;
@@ -145,7 +151,9 @@ const Report = () => {
         from_date: answers["contract.from_date"] ?? "",
         end_date: answers["contract.end_date"] ?? "",
         contract_type: contractType ?? "service",
-        package_type: answers["contract.package"] ?? "",
+        package_type: answers["contract.package"] === "Custom Package"
+          ? (answers["contract.custom_package"] ?? "")
+          : (answers["contract.package"] ?? ""),
         staff_name: answers["signature.staff_name"] ?? "",
       };
 
@@ -205,11 +213,16 @@ const Report = () => {
                     step.id === "p-contract-period"
                       ? {
                           ...step,
-                          fields: step.fields.map((f) =>
-                            f.id === "contract.package"
-                              ? { ...f, options: contractType === "warranty" ? WARRANTY_PACKAGES : SERVICE_PACKAGES }
-                              : f
-                          ),
+                          fields: [
+                            ...step.fields.map((f) =>
+                              f.id === "contract.package"
+                                ? { ...f, options: contractType === "warranty" ? WARRANTY_PACKAGES : SERVICE_PACKAGES }
+                                : f
+                            ),
+                            ...(answers["contract.package"] === "Custom Package"
+                              ? [{ kind: "text" as const, id: "contract.custom_package", label: "Custom Package Name", placeholder: "e.g. PREMIUM CARE 3YR-40KM", required: true }]
+                              : []),
+                          ],
                         }
                       : step
                   }

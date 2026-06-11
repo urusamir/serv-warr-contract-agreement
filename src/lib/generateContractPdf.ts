@@ -230,7 +230,9 @@ export async function generateContractPdf(answers: Answers, contractType: "servi
         { content: "Service Intervals", styles: { fontStyle: "bold", fillColor: LIGHT_GRAY } },
         { content: SERVICE_INTERVALS, colSpan: 1 },
         { content: "Package", styles: { fontStyle: "bold", fillColor: LIGHT_GRAY } },
-        v(answers, "contract.package"),
+        v(answers, "contract.package") === "Custom Package"
+          ? v(answers, "contract.custom_package")
+          : v(answers, "contract.package"),
       ],
     ],
     theme: "grid",

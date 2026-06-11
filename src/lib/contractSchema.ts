@@ -16,6 +16,7 @@ export const SERVICE_PACKAGES = [
   "OKM-SC-2YR-30KM",
   "UC-SC-2YR-30KM",
   "UC-SC-1YR-20KM",
+  "Custom Package",
 ];
 
 export const WARRANTY_PACKAGES = [
@@ -23,6 +24,7 @@ export const WARRANTY_PACKAGES = [
   "Plus Warranty-24MNTS/60KM",
   "Basic Warranty-12MNTS/30KM",
   "Basic Warranty-24MNTS/60KM",
+  "Custom Package",
 ];
 
 export const SERVICE_INTERVALS = "6 months / 10,000 KM whichever comes first";
