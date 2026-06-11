@@ -88,6 +88,14 @@ const Report = () => {
   }, [answers["agreement.car_id"], customerType]);
 
   useEffect(() => {
+    if (customerType === "non-kavak") {
+      setAnswer("agreement.car_id", "N/A");
+    } else if (customerType === "kavak") {
+      setAnswer("agreement.car_id", "");
+    }
+  }, [customerType]);
+
+  useEffect(() => {
     const pkg = answers["contract.package"];
     const fromKm = Number(answers["contract.from_km"] ?? 0);
     if (!pkg) return;
@@ -226,7 +234,7 @@ const Report = () => {
                     let s = step;
                     // For non-kavak: car ID not required, customer/vehicle fields unlocked
                     if (isNonKavak && s.id === "p-agreement") {
-                      s = { ...s, fields: s.fields.map((f) => f.id === "agreement.car_id" ? { ...f, required: false } : f) };
+                      s = { ...s, fields: s.fields.map((f) => f.id === "agreement.car_id" ? { ...f, required: false, locked: true } : f) };
                     }
                     if (isNonKavak && (s.id === "p-customer" || s.id === "p-vehicle")) {
                       s = { ...s, fields: s.fields.map((f) => ({ ...f, locked: false })) };
