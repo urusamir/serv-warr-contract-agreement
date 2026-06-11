@@ -6,7 +6,10 @@ export type FieldDef =
   | { kind: "number"; id: string; label: string; unit?: string; required?: boolean; locked?: boolean }
   | { kind: "select"; id: string; label: string; options: string[]; required?: boolean; locked?: boolean };
 
+export type CustomerType = "kavak" | "non-kavak";
+
 export type Step =
+  | { kind: "customer-type"; id: string }
   | { kind: "contract-type"; id: string }
   | { kind: "page"; id: string; section: string; title: string; subtitle?: string; fields: FieldDef[] }
   | { kind: "terms"; id: string }
@@ -35,6 +38,7 @@ export const CONTRACT_TYPE_LABEL: Record<ContractType, string> = {
 };
 
 export const steps: Step[] = [
+  { kind: "customer-type", id: "customer-type" },
   { kind: "contract-type", id: "contract-type" },
 
   {

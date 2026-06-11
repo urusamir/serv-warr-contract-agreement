@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check, ChevronRight, ExternalLink, FileText, Loader2 } from "lucide-react";
 import logoBlack from "@/assets/kavak-logo-black.png";
 import companyStamp from "@/assets/company-stamp.png";
-import { steps, WARRANTY_PACKAGES, SERVICE_PACKAGES, type ContractType, type FieldDef } from "@/lib/contractSchema";
+import { steps, WARRANTY_PACKAGES, SERVICE_PACKAGES, type ContractType, type CustomerType, type FieldDef } from "@/lib/contractSchema";
 import { generateContractPdf, saveContractPdf } from "@/lib/generateContractPdf";
 import { SignaturePad } from "@/components/SignaturePad";
 import { TCModal } from "@/components/TCModal";
@@ -34,6 +34,7 @@ const Report = () => {
   const navigate = useNavigate();
   const [index, setIndex] = useState(0);
   const [direction, setDirection] = useState(1);
+  const [customerType, setCustomerType] = useState<CustomerType | undefined>();
   const [contractType, setContractType] = useState<ContractType | undefined>();
   const [answers, setAnswers] = useState<Answers>({
     "agreement.date": new Date().toISOString().slice(0, 10),
@@ -63,6 +64,7 @@ const Report = () => {
   }, []);
 
   useEffect(() => {
+    if (customerType !== "kavak") return;
     const carId = (answers["agreement.car_id"] ?? "").trim();
     if (!carId) return;
     const timer = setTimeout(async () => {
@@ -83,7 +85,7 @@ const Report = () => {
       }));
     }, 600);
     return () => clearTimeout(timer);
-  }, [answers["agreement.car_id"]]);
+  }, [answers["agreement.car_id"], customerType]);
 
   useEffect(() => {
     const pkg = answers["contract.package"];
@@ -104,6 +106,7 @@ const Report = () => {
   }, [answers["contract.package"], answers["contract.from_km"], answers["contract.custom_package"]]);
 
   const canAdvance = useCallback((): boolean => {
+    if (step.kind === "customer-type") return !!customerType;
     if (step.kind === "contract-type") return !!contractType;
     if (step.kind === "page") {
       const ok = step.fields
@@ -151,6 +154,7 @@ const Report = () => {
         end_km: answers["contract.end_km"] ?? "",
         from_date: answers["contract.from_date"] ?? "",
         end_date: answers["contract.end_date"] ?? "",
+        customer_type: customerType ?? "",
         contract_type: contractType ?? "service",
         package_type: answers["contract.package"] === "Custom Package"
           ? (answers["contract.custom_package"] ?? "")
@@ -201,6 +205,13 @@ const Report = () => {
               exit="exit"
               transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
             >
+              {step.kind === "customer-type" && (
+                <CustomerTypeView
+                  value={customerType}
+                  onChange={setCustomerType}
+                  onNext={tryGoNext}
+                />
+              )}
               {step.kind === "contract-type" && (
                 <ContractTypeView
                   value={contractType}
@@ -210,23 +221,34 @@ const Report = () => {
               )}
               {step.kind === "page" && (
                 <PageView
-                  step={
-                    step.id === "p-contract-period"
-                      ? {
-                          ...step,
-                          fields: [
-                            ...step.fields.map((f) =>
-                              f.id === "contract.package"
-                                ? { ...f, options: contractType === "warranty" ? WARRANTY_PACKAGES : SERVICE_PACKAGES }
-                                : f
-                            ),
-                            ...(answers["contract.package"] === "Custom Package"
-                              ? [{ kind: "text" as const, id: "contract.custom_package", label: "Custom Package Name", placeholder: "e.g. PREMIUM CARE 3YR-40KM", required: true }]
-                              : []),
-                          ],
-                        }
-                      : step
-                  }
+                  step={(() => {
+                    const isNonKavak = customerType === "non-kavak";
+                    let s = step;
+                    // For non-kavak: car ID not required, customer/vehicle fields unlocked
+                    if (isNonKavak && s.id === "p-agreement") {
+                      s = { ...s, fields: s.fields.map((f) => f.id === "agreement.car_id" ? { ...f, required: false } : f) };
+                    }
+                    if (isNonKavak && (s.id === "p-customer" || s.id === "p-vehicle")) {
+                      s = { ...s, fields: s.fields.map((f) => ({ ...f, locked: false })) };
+                    }
+                    // For contract period: dynamic packages + custom package field
+                    if (s.id === "p-contract-period") {
+                      s = {
+                        ...s,
+                        fields: [
+                          ...s.fields.map((f) =>
+                            f.id === "contract.package"
+                              ? { ...f, options: contractType === "warranty" ? WARRANTY_PACKAGES : SERVICE_PACKAGES }
+                              : f
+                          ),
+                          ...(answers["contract.package"] === "Custom Package"
+                            ? [{ kind: "text" as const, id: "contract.custom_package", label: "Custom Package Name", placeholder: "e.g. PREMIUM CARE 3YR-40KM", required: true }]
+                            : []),
+                        ],
+                      };
+                    }
+                    return s;
+                  })()}
                   answers={answers}
                   setAnswer={setAnswer}
                   onNext={tryGoNext}
@@ -301,6 +323,84 @@ const Report = () => {
 };
 
 export default Report;
+
+/* ─── Customer Type ─── */
+
+function CustomerTypeView({
+  value,
+  onChange,
+  onNext,
+}: {
+  value: CustomerType | undefined;
+  onChange: (v: CustomerType) => void;
+  onNext: () => void;
+}) {
+  const options: { key: CustomerType; label: string; description: string }[] = [
+    {
+      key: "kavak",
+      label: "Kavak",
+      description: "Customer is purchasing the service/warranty for their own vehicle.",
+    },
+    {
+      key: "non-kavak",
+      label: "Non Kavak",
+      description: "Customer is purchasing the service/warranty for a third party vehicle.",
+    },
+  ];
+
+  return (
+    <div className="py-4">
+      <div className="text-xs font-semibold uppercase tracking-widest text-primary mb-2">
+        Step 1
+      </div>
+      <h2 className="text-3xl md:text-5xl font-black tracking-tight">
+        What is the customer type?
+      </h2>
+      <p className="mt-3 text-muted-foreground">Select the customer type to proceed.</p>
+
+      <div className="mt-8 grid gap-3 max-w-xl">
+        {options.map((o) => {
+          const selected = value === o.key;
+          return (
+            <button
+              key={o.key}
+              type="button"
+              onClick={() => onChange(o.key)}
+              className={cn(
+                "flex items-start gap-4 text-left px-5 py-4 rounded-md border-2 transition",
+                selected ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+              )}
+            >
+              <span
+                className={cn(
+                  "h-8 w-8 inline-flex items-center justify-center rounded border shrink-0 mt-0.5",
+                  selected ? "bg-primary text-primary-foreground border-primary" : "bg-muted border-border"
+                )}
+              >
+                {selected ? <Check className="h-4 w-4" /> : null}
+              </span>
+              <span className="flex-1">
+                <span className="block text-lg font-semibold">{o.label}</span>
+                <span className="block text-sm text-muted-foreground mt-0.5">{o.description}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-10">
+        <button
+          onClick={onNext}
+          disabled={!value}
+          className="inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-md px-6 py-3 font-semibold hover:opacity-90 transition disabled:opacity-40"
+        >
+          Continue
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 /* ─── Contract Type ─── */
 
