@@ -480,7 +480,7 @@ function FieldInput({
       );
     }
     case "date": {
-      const locked = ["agreement.date", "contract.from_date", "contract.end_date"].includes(field.id);
+      const locked = ["agreement.date", "contract.end_date"].includes(field.id);
       return (
         <input
           ref={inputRef as React.RefObject<HTMLInputElement>}
