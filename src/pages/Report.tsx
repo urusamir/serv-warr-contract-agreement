@@ -43,6 +43,7 @@ const Report = () => {
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [tcOpen, setTcOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [customPkgError, setCustomPkgError] = useState("");
 
   const total = steps.length;
   const step = steps[index];
@@ -229,6 +230,17 @@ const Report = () => {
                   answers={answers}
                   setAnswer={setAnswer}
                   onNext={tryGoNext}
+                  fieldErrors={{ "contract.custom_package": customPkgError }}
+                  onFieldBlur={(id) => {
+                    if (id === "contract.custom_package") {
+                      const val = (answers["contract.custom_package"] ?? "").trim();
+                      if (val && !parsePackage(val)) {
+                        setCustomPkgError("Name must include duration and KM — e.g. 3YR-40KM or 12MNTS/30KM");
+                      } else {
+                        setCustomPkgError("");
+                      }
+                    }
+                  }}
                 />
               )}
               {step.kind === "terms" && (
@@ -388,11 +400,15 @@ function PageView({
   answers,
   setAnswer,
   onNext,
+  fieldErrors = {},
+  onFieldBlur,
 }: {
   step: Extract<(typeof steps)[number], { kind: "page" }>;
   answers: Answers;
   setAnswer: (id: string, v: any) => void;
   onNext: () => void;
+  fieldErrors?: Record<string, string>;
+  onFieldBlur?: (id: string) => void;
 }) {
   const firstInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -413,6 +429,8 @@ function PageView({
             onChange={(v) => setAnswer(field.id, v)}
             autoFocus={i === 0}
             inputRef={i === 0 ? firstInputRef : undefined}
+            error={fieldErrors[field.id]}
+            onBlur={onFieldBlur ? () => onFieldBlur(field.id) : undefined}
           />
         ))}
       </div>
@@ -439,12 +457,16 @@ function FieldRow({
   onChange,
   autoFocus,
   inputRef,
+  error,
+  onBlur,
 }: {
   field: FieldDef;
   value: any;
   onChange: (v: any) => void;
   autoFocus?: boolean;
   inputRef?: React.MutableRefObject<HTMLInputElement | null>;
+  error?: string;
+  onBlur?: () => void;
 }) {
   return (
     <div>
@@ -455,7 +477,8 @@ function FieldRow({
           <span className="ml-2 text-sm font-normal text-muted-foreground">({field.unit})</span>
         )}
       </label>
-      <FieldInput field={field} value={value} onChange={onChange} autoFocus={autoFocus} inputRef={inputRef} />
+      <FieldInput field={field} value={value} onChange={onChange} autoFocus={autoFocus} inputRef={inputRef} onBlur={onBlur} />
+      {error && <p className="mt-1.5 text-sm text-red-500">{error}</p>}
     </div>
   );
 }
@@ -466,12 +489,14 @@ function FieldInput({
   onChange,
   autoFocus,
   inputRef,
+  onBlur,
 }: {
   field: FieldDef;
   value: any;
   onChange: (v: any) => void;
   autoFocus?: boolean;
   inputRef?: React.MutableRefObject<HTMLInputElement | null>;
+  onBlur?: () => void;
 }) {
   const baseInput =
     "w-full bg-transparent border-0 border-b-2 border-border focus:border-primary focus:outline-none text-lg font-medium py-2 transition-colors placeholder:text-muted-foreground/50";
@@ -486,6 +511,7 @@ function FieldInput({
           className={cn(baseInput, locked && "opacity-50 cursor-not-allowed")}
           value={value ?? ""}
           onChange={(e) => { if (!locked) onChange(e.target.value); }}
+          onBlur={onBlur}
           placeholder={field.placeholder ?? "Type your answer…"}
           autoFocus={autoFocus && !locked}
           readOnly={locked}
