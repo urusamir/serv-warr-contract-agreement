@@ -123,7 +123,7 @@ const Report = () => {
     }
     if (step.kind === "terms") return termsAgreed;
     return true;
-  }, [step, contractType, answers, termsAgreed]);
+  }, [step, customerType, contractType, answers, termsAgreed]);
 
   const tryGoNext = useCallback(() => {
     if (!canAdvance()) {
