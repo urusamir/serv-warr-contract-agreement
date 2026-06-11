@@ -15,12 +15,10 @@ import { supabase } from "@/lib/supabase";
 type Answers = Record<string, any>;
 
 function parsePackage(pkg: string): { years: number; kmToAdd: number } | null {
-  // Service format: OKM-SC-2YR-30KM, UC-SC-1YR-20KM
   const svc = pkg.match(/(\d+)YR[^/]*?(\d+)KM/);
-  if (svc) return { years: parseInt(svc[1]), kmToAdd: parseInt(svc[2]) * 1000 };
-  // Warranty format: Plus Warranty-12MNTS/30KM
+  if (svc) return { years: parseInt(svc[1]), kmToAdd: parseInt(svc[2]) };
   const warr = pkg.match(/(\d+)MNTS\/(\d+)KM/);
-  if (warr) return { years: Math.round(parseInt(warr[1]) / 12), kmToAdd: parseInt(warr[2]) * 1000 };
+  if (warr) return { years: Math.round(parseInt(warr[1]) / 12), kmToAdd: parseInt(warr[2]) };
   return null;
 }
 
@@ -250,7 +248,7 @@ const Report = () => {
                               : f
                           ),
                           ...(answers["contract.package"] === "Custom Package"
-                            ? [{ kind: "text" as const, id: "contract.custom_package", label: "Custom Package Name", placeholder: "e.g. PREMIUM CARE 3YR-40KM", required: true }]
+                            ? [{ kind: "text" as const, id: "contract.custom_package", label: "Custom Package Name", placeholder: "e.g. PREMIUM CARE 3YR-40000KM", required: true }]
                             : []),
                         ],
                       };
@@ -265,7 +263,7 @@ const Report = () => {
                     if (id === "contract.custom_package") {
                       const val = (answers["contract.custom_package"] ?? "").trim();
                       if (val && !parsePackage(val)) {
-                        setCustomPkgError("Name must include duration and KM — e.g. 3YR-40KM or 12MNTS/30KM");
+                        setCustomPkgError("Name must include duration and KM — e.g. 3YR-40000KM or 12MNTS/30000KM");
                       } else {
                         setCustomPkgError("");
                       }
