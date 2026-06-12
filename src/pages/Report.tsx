@@ -66,21 +66,42 @@ const Report = () => {
     const carId = (answers["agreement.car_id"] ?? "").trim();
     if (!carId) return;
     const timer = setTimeout(async () => {
-      const { data } = await supabase
+      // Try primary table first
+      const { data: primary } = await supabase
         .from("serv_warr_customers")
         .select("customer_name, customer_phone, customer_email, vin_no, car_detail")
         .eq("car_id", carId)
         .maybeSingle();
-      if (!data) return;
-      const parts = (data.car_detail ?? "").split(" ");
-      setAnswers((prev) => ({
-        ...prev,
-        "customer.name": data.customer_name ?? prev["customer.name"] ?? "",
-        "customer.mobile": data.customer_phone ?? prev["customer.mobile"] ?? "",
-        "customer.email": data.customer_email ?? prev["customer.email"] ?? "",
-        "vehicle.vin": data.vin_no ?? prev["vehicle.vin"] ?? "",
-        "vehicle.car": data.car_detail || prev["vehicle.car"] || "",
-      }));
+
+      if (primary) {
+        setAnswers((prev) => ({
+          ...prev,
+          "customer.name": primary.customer_name ?? prev["customer.name"] ?? "",
+          "customer.mobile": primary.customer_phone ?? prev["customer.mobile"] ?? "",
+          "customer.email": primary.customer_email ?? prev["customer.email"] ?? "",
+          "vehicle.vin": primary.vin_no ?? prev["vehicle.vin"] ?? "",
+          "vehicle.car": primary.car_detail || prev["vehicle.car"] || "",
+        }));
+        return;
+      }
+
+      // Fallback to inventory table
+      const { data: inv } = await supabase
+        .from("serv_warr_customers_inv")
+        .select('vin_no, title_en, "Customer Name", "Customer Email", "Customer Contact"')
+        .eq("car_id", carId)
+        .maybeSingle();
+
+      if (inv) {
+        setAnswers((prev) => ({
+          ...prev,
+          "customer.name": inv["Customer Name"] ?? prev["customer.name"] ?? "",
+          "customer.mobile": inv["Customer Contact"] ?? prev["customer.mobile"] ?? "",
+          "customer.email": inv["Customer Email"] ?? prev["customer.email"] ?? "",
+          "vehicle.vin": inv.vin_no ?? prev["vehicle.vin"] ?? "",
+          "vehicle.car": inv.title_en || prev["vehicle.car"] || "",
+        }));
+      }
     }, 600);
     return () => clearTimeout(timer);
   }, [answers["agreement.car_id"], customerType]);
